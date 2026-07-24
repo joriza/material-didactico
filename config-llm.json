@@ -1,0 +1,26 @@
+{
+  "default": "llama-cpp",
+  "provider": {
+    "llama-cpp": {
+      "name": "llama-cpp",
+      "disableThinking": true,
+      "options": {
+        "baseURL": "http://localhost:8080/v1",
+        "apiKey": "dummy-key"
+      },
+      "models": {
+        "local-model": { "name": "local-model" }
+      }
+    },
+    "glm-cloud": {
+      "name": "glm-cloud",
+      "options": {
+        "baseURL": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "54773eb51c1d436ca4cd35a25c12d591.xBPd71tc5sGqdloY"
+      },
+      "models": {
+        "glm-4.7": { "name": "glm-4.5-flash" }
+      }
+    }
+  }
+}
