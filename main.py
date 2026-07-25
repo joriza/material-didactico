@@ -221,11 +221,41 @@ def _nombre_ref_de_b1(sigla, nro_eje, nro_clase_eje):
     return f.stem[len(pref):]
 
 
+def _existe_output(sigla, nro_eje, nro_clase_eje, tarea_code):
+    """Verifica si ya existe el output de una tarea para una clase."""
+    tarea_leg = TAREA_LEGIBLE[tarea_code]
+    return bool(_find_latest(OUTPUT, f"{sigla}-{nro_eje}{nro_clase_eje}-{tarea_leg}-*.md"))
+
+
+def resolver_cascada_b(tarea_code, manifest):
+    """Resuelve el subárbol de una tarea tipo b: prerrequisitos + tarea + dependientes.
+    Devuelve lista en orden topológico (sólo tipo b; a1/a2 se verifican aparte)."""
+    visitados = set()
+    orden = []
+
+    def visitar(t):
+        if t in visitados or t not in TAREAS_B:
+            return
+        visitados.add(t)
+        for prereq in manifest.get("tareas", {}).get(t, {}).get("depende_de", []):
+            visitar(prereq)
+        orden.append(t)
+        for dep in manifest.get("tareas", {}).get(t, {}).get("dependientes", []):
+            visitar(dep)
+
+    visitar(tarea_code)
+    return orden
+
+
 # --------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------
+SOBRESCRIBIR_SIN_PREGUNTAR = False
+
+
 def write_output(path: Path, content: str):
-    if path.exists():
+    global SOBRESCRIBIR_SIN_PREGUNTAR
+    if path.exists() and not SOBRESCRIBIR_SIN_PREGUNTAR:
         r = input(f"\nEl archivo '{path.name}' ya existe. ¿Sobrescribir? [S/n]: ").strip().lower()
         if r and r != "s":
             print("→ Se omite (no se sobrescribe).")
@@ -352,6 +382,7 @@ def run_b2_b5(args, tarea_code, clase_rows):
 # CLI
 # --------------------------------------------------------------------------
 def main(argv=None):
+    global SOBRESCRIBIR_SIN_PREGUNTAR
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
@@ -380,12 +411,11 @@ def main(argv=None):
     elif tarea == "a2":
         docs = run_a2(args)
     elif tarea in TAREAS_B:
-        # eje 0 → no genera tipo b
         if str(args.eje) == "0":
             print("→ nro_eje=0 (clase sin dictado): no se generan archivos tipo b.")
             return
-        if not args.eje or (args.clase_eje is None and args.id is None):
-            raise SystemExit(f"{tarea} requiere --eje N --clase-eje M (o --id N).")
+        if not args.eje:
+            raise SystemExit(f"{tarea} requiere --eje N (y opcional --clase-eje M para una clase puntual).")
         # resolver a2
         a2_path = Path(args.a2) if args.a2 else _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
         if not a2_path or not a2_path.exists():
@@ -393,30 +423,52 @@ def main(argv=None):
         if not a2_path.exists():
             raise SystemExit("No se encontró a2. Generá a2 primero o usá --a2 <ruta>.")
         rows = parse_a2_table(a2_path)
-        # por id o por eje+clase-eje
+
+        # Determinar las clases a procesar
         if args.id:
-            clase_rows = [r for r in rows if str(r.get("id", "")).strip() == str(args.id).strip()]
-            if clase_rows:
-                args.eje = clase_rows[0].get("nro_eje", args.eje)
-                args.clase_eje = clase_rows[0].get("nro_clase_eje", args.clase_eje)
+            id_row = next((r for r in rows if str(r.get("id", "")).strip() == str(args.id).strip()), None)
+            if not id_row:
+                raise SystemExit(f"No se encontró id={args.id} en {a2_path.name}")
+            clases_a_procesar = [(id_row.get("nro_eje", args.eje), id_row.get("nro_clase_eje", "0"))]
+        elif args.clase_eje is not None:
+            clases_a_procesar = [(args.eje, args.clase_eje)]
         else:
-            clase_rows = filter_by_eje(rows, args.eje, args.clase_eje)
-        if not clase_rows:
-            raise SystemExit(
-                f"No se encontró la clase (eje={args.eje}, clase-eje={args.clase_eje}, id={args.id}) en {a2_path.name}"
-            )
-        print(f"→ Clase: eje={args.eje} clase-eje={args.clase_eje} | "
-              f"tema={clase_rows[0].get('tema', '')} | carácter={clase_rows[0].get('caracter', '')}")
-        if tarea == "b1":
-            # Cascada B completa: b1 → b2, b3, b5 → b4 (en 1 comando)
-            print("\n>>> Cascada B: b1 → b2, b3, b5, b4 <<<")
-            docs += run_b1(args, clase_rows)
-            docs += run_b2_b5(args, "b2", clase_rows)
-            docs += run_b2_b5(args, "b3", clase_rows)
-            docs += run_b2_b5(args, "b5", clase_rows)
-            docs += run_b2_b5(args, "b4", clase_rows)
-        else:
-            docs = run_b2_b5(args, tarea, clase_rows)
+            # TODAS las clases del eje (nro_clase_eje != 0)
+            clases_unicas = sorted(set(
+                str(r.get("nro_clase_eje", "0")).strip()
+                for r in rows
+                if str(r.get("nro_eje", "")).strip() == str(args.eje).strip()
+                and str(r.get("nro_clase_eje", "0")).strip() != "0"
+            ), key=lambda x: int(x) if x.isdigit() else 0)
+            clases_a_procesar = [(args.eje, ce) for ce in clases_unicas]
+
+        if len(clases_a_procesar) > 1:
+            SOBRESCRIBIR_SIN_PREGUNTAR = True
+            print(f"→ Modo multi-clase: {len(clases_a_procesar)} clase(s) del eje {args.eje}. Sobrescribiendo sin preguntar.")
+
+        manifest = load_yaml(BASE_COMUN / "tareas.yaml")
+
+        for eje_val, clase_eje_val in clases_a_procesar:
+            args.eje = eje_val
+            args.clase_eje = clase_eje_val
+            clase_rows = filter_by_eje(rows, eje_val, clase_eje_val)
+            if not clase_rows:
+                print(f"  ⚠ No se encontró eje={eje_val} clase-eje={clase_eje_val}, saltando.")
+                continue
+            print(f"\n========== Clase eje={eje_val} clase-eje={clase_eje_val} | "
+                  f"tema={clase_rows[0].get('tema', '')} ==========")
+            cascada = resolver_cascada_b(tarea, manifest)
+            print(f"  Cascada: {' → '.join(cascada)}")
+            for t in cascada:
+                if _existe_output(args.materia, eje_val, clase_eje_val, t):
+                    print(f"  → {t} ya existe, saltando.")
+                    continue
+                if t == "b1":
+                    docs += run_b1(args, clase_rows)
+                else:
+                    docs += run_b2_b5(args, t, clase_rows)
+
+        print(f"\n>>> {len(clases_a_procesar)} clase(s) procesada(s), {len(docs)} documento(s) generado(s). <<<")
     else:
         raise SystemExit(f"Tarea '{tarea}' no implementada todavía.")
 
