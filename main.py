@@ -68,7 +68,7 @@ def _find_latest(directory: Path, pattern: str):
 
 
 # --------------------------------------------------------------------------
-# a2 — tabla de clases (8 columnas canónicas)
+# a2 — tabla de clases (9 columnas canónicas)
 # --------------------------------------------------------------------------
 def _canon_key(k: str) -> str:
     """Normaliza el encabezado de columna a una clave canónica."""
@@ -83,6 +83,9 @@ def _canon_key(k: str) -> str:
         "carácter": "caracter", "caracter": "caracter", "objetivo": "caracter",
         "tema del día": "tema", "tema del dia": "tema", "tema": "tema",
         "actividades": "actividades", "fecha": "fecha", "id": "id",
+        "tema_nro": "tema_nro", "tema nro": "tema_nro", "nro_tema": "tema_nro",
+        "nro tema": "tema_nro", "numero de tema": "tema_nro", "tema numero": "tema_nro",
+        "nº tema": "tema_nro", "nº de tema": "tema_nro", "tema nº": "tema_nro",
         "nº clase": "nro_clase_viejo", "nro clase": "nro_clase_viejo",
     }
     if k in explicit:
@@ -195,10 +198,23 @@ def pascal(texto: str) -> str:
     return "_".join(p.capitalize() for p in palabras if p)
 
 
-def nombre_archivo(sigla, nro_eje, nro_clase_eje, tarea_code, nombre_referencial) -> str:
+def nombre_archivo(sigla, nro_eje, nro_clase_eje, tarea_code, nombre_referencial, tema_nro=None, multi=False) -> str:
+    """Arma el nombre de archivo. Si multi=True, appendea el dígito del tema al código de clase."""
     codigo = f"{sigla}-{nro_eje}{nro_clase_eje}"
+    if multi and tema_nro is not None:
+        if not str(tema_nro).isdigit() or int(tema_nro) > 9:
+            raise SystemExit(f"Tema_Nro debe ser un dígito (1-9). Recibido: {tema_nro!r}")
+        codigo += str(tema_nro)
     tarea_leg = TAREA_LEGIBLE.get(tarea_code, pascal(tarea_code))
     return f"{codigo}-{tarea_leg}-{nombre_referencial}.md"
+
+
+def _prefijo_codigo(sigla, nro_eje, nro_clase_eje, tema_nro=None, multi=False) -> str:
+    """Devuelve el prefijo de código de clase (sin guion final ni tarea)."""
+    codigo = f"{sigla}-{nro_eje}{nro_clase_eje}"
+    if multi and tema_nro is not None:
+        codigo += str(tema_nro)
+    return codigo
 
 
 def extraer_titulo(doc: str) -> str:
@@ -212,19 +228,22 @@ def extraer_titulo(doc: str) -> str:
     return "documento"
 
 
-def _nombre_ref_de_b1(sigla, nro_eje, nro_clase_eje):
-    """Busca el archivo b1 de esa clase y extrae su Nombre_Referencial (compartido)."""
-    pref = f"{sigla}-{nro_eje}{nro_clase_eje}-Material_Didactico-"
+def _nombre_ref_de_b1(sigla, nro_eje, nro_clase_eje, tema_nro=None, multi=False):
+    """Busca el archivo b1 de esa clase+tema y extrae su Nombre_Referencial (compartido)."""
+    pref = _prefijo_codigo(sigla, nro_eje, nro_clase_eje, tema_nro, multi) + "-Material_Didactico-"
     f = _find_latest(OUTPUT, f"{pref}*.md")
     if not f:
         return None
     return f.stem[len(pref):]
 
 
-def _existe_output(sigla, nro_eje, nro_clase_eje, tarea_code):
-    """Verifica si ya existe el output de una tarea para una clase."""
+def _existe_output(sigla, nro_eje, nro_clase_eje, tarea_code, tema_nro=None, multi=False):
+    """Verifica si ya existe el output de una tarea para una clase+tema."""
     tarea_leg = TAREA_LEGIBLE[tarea_code]
-    return bool(_find_latest(OUTPUT, f"{sigla}-{nro_eje}{nro_clase_eje}-{tarea_leg}-*.md"))
+    pref = _prefijo_codigo(sigla, nro_eje, nro_clase_eje, tema_nro, multi) + f"-{tarea_leg}-"
+    # Match exacto del dígito de tema: exigir guion tras el código para no colisionar
+    # IRI-11-... (mono) vs IRI-111-... (multi): el guion actúa como delimitador.
+    return bool(_find_latest(OUTPUT, f"{pref}*.md"))
 
 
 def resolver_cascada_b(tarea_code, manifest):
@@ -321,58 +340,60 @@ def run_a2(args):
     return [(fname, doc)] if r else []
 
 
-def _insumo(args, tarea_dep):
-    """Lee el output de una tarea dependiente (b1/b2) para la clase actual."""
+def _insumo(args, tarea_dep, tema_nro=None, multi=False):
+    """Lee el output de una tarea dependiente (b1/b2) para la clase+tema actual."""
     tarea_leg = TAREA_LEGIBLE[tarea_dep]
-    f = _find_latest(OUTPUT, f"{args.materia}-{args.eje}{args.clase_eje}-{tarea_leg}-*.md")
+    pref = _prefijo_codigo(args.materia, args.eje, args.clase_eje, tema_nro, multi) + f"-{tarea_leg}-"
+    f = _find_latest(OUTPUT, f"{pref}*.md")
     if not f:
-        raise SystemExit(f"No se encontró output de '{tarea_dep}' para esta clase. Generá {tarea_dep} primero.")
+        tema_suf = f" (tema {tema_nro})" if multi else ""
+        raise SystemExit(f"No se encontró output de '{tarea_dep}' para esta clase{tema_suf}. Generá {tarea_dep} primero.")
     return f.read_text(encoding="utf-8")
 
 
-def run_b1(args, clase_rows):
+def run_b1(args, tema_row, tema_nro=None, multi=False):
     _, vars_cfg, _, env, (client, model, dt) = _cargar_comun(args)
-    r0 = clase_rows[0]
     variables = {**vars_cfg,
-                 "eje_numero": r0.get("nro_eje", args.eje),
-                 "eje_descripcion": r0.get("eje_descripcion", ""),
-                 "tema": r0.get("tema", ""),
-                 "actividades": r0.get("actividades", "")}
+                 "eje_numero": tema_row.get("nro_eje", args.eje),
+                 "eje_descripcion": tema_row.get("eje_descripcion", ""),
+                 "tema": tema_row.get("tema", ""),
+                 "actividades": tema_row.get("actividades", "")}
     prompt = render(env, TAREA_TEMPLATE["b1"], variables)
     if args.dry_run:
         print("\n--- PROMPT (dry-run, b1) ---\n" + prompt)
         return []
-    print(f"\n=== b1 — Material Didáctico (eje {args.eje}, clase-eje {args.clase_eje}) ===")
+    tema_suf = f", tema {tema_nro}" if multi else ""
+    print(f"\n=== b1 — Material Didáctico (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
     ref = nombre_ref(extraer_titulo(doc))
-    fname = nombre_archivo(args.materia, args.eje, args.clase_eje, "b1", ref)
+    fname = nombre_archivo(args.materia, args.eje, args.clase_eje, "b1", ref, tema_nro=tema_nro, multi=multi)
     print(f"\n⏱  {time.time() - t0:.1f}s")
     r = write_output(OUTPUT / fname, doc)
     return [(fname, doc)] if r else []
 
 
-def run_b2_b5(args, tarea_code, clase_rows):
+def run_b2_b5(args, tarea_code, tema_row, tema_nro=None, multi=False):
     _, vars_cfg, _, env, (client, model, dt) = _cargar_comun(args)
-    r0 = clase_rows[0]
     variables = {**vars_cfg,
-                 "eje_numero": r0.get("nro_eje", args.eje),
-                 "eje_descripcion": r0.get("eje_descripcion", ""),
-                 "tema": r0.get("tema", ""),
-                 "actividades": r0.get("actividades", "")}
+                 "eje_numero": tema_row.get("nro_eje", args.eje),
+                 "eje_descripcion": tema_row.get("eje_descripcion", ""),
+                 "tema": tema_row.get("tema", ""),
+                 "actividades": tema_row.get("actividades", "")}
     if tarea_code in ("b2", "b3", "b5"):
-        variables["material_didactico"] = _insumo(args, "b1")
+        variables["material_didactico"] = _insumo(args, "b1", tema_nro=tema_nro, multi=multi)
     if tarea_code == "b4":
-        variables["actividad_aulica"] = _insumo(args, "b2")
+        variables["actividad_aulica"] = _insumo(args, "b2", tema_nro=tema_nro, multi=multi)
     prompt = render(env, TAREA_TEMPLATE[tarea_code], variables)
     if args.dry_run:
         print(f"\n--- PROMPT (dry-run, {tarea_code}) ---\n" + prompt)
         return []
-    print(f"\n=== {tarea_code} — {TAREA_LEGIBLE[tarea_code]} (eje {args.eje}, clase-eje {args.clase_eje}) ===")
+    tema_suf = f", tema {tema_nro}" if multi else ""
+    print(f"\n=== {tarea_code} — {TAREA_LEGIBLE[tarea_code]} (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
-    ref = _nombre_ref_de_b1(args.materia, args.eje, args.clase_eje) or nombre_ref(extraer_titulo(doc))
-    fname = nombre_archivo(args.materia, args.eje, args.clase_eje, tarea_code, ref)
+    ref = _nombre_ref_de_b1(args.materia, args.eje, args.clase_eje, tema_nro=tema_nro, multi=multi) or nombre_ref(extraer_titulo(doc))
+    fname = nombre_archivo(args.materia, args.eje, args.clase_eje, tarea_code, ref, tema_nro=tema_nro, multi=multi)
     print(f"\n⏱  {time.time() - t0:.1f}s")
     r = write_output(OUTPUT / fname, doc)
     return [(fname, doc)] if r else []
@@ -395,6 +416,8 @@ def main(argv=None):
     ap.add_argument("--eje", help="nro_eje (ej: 1)")
     ap.add_argument("--clase-eje", dest="clase_eje", help="nro_clase_eje (ej: 1)")
     ap.add_argument("--id", help="id global de la fila (alternativa a --eje/--clase-eje)")
+    ap.add_argument("--tema-idx", dest="tema_idx",
+                    help="Tema_Nro puntual dentro del encuentro (multi-tema). Si se omite, procesa todos.")
     ap.add_argument("--a2", help="ruta a un a2 (plan de clases) alternativo")
     ap.add_argument("--a1", help="ruta a un a1 (plan anual) alternativo")
     ap.add_argument("--provider", help="provider de config-llm.json")
@@ -464,18 +487,31 @@ def main(argv=None):
             if not clase_rows:
                 print(f"  ⚠ No se encontró eje={eje_val} clase-eje={clase_eje_val}, saltando.")
                 continue
-            print(f"\n========== Clase eje={eje_val} clase-eje={clase_eje_val} | "
-                  f"tema={clase_rows[0].get('tema', '')} ==========")
-            cascada = resolver_cascada_b(tarea, manifest)
-            print(f"  Cascada: {' → '.join(cascada)}")
-            for t in cascada:
-                if _existe_output(args.materia, eje_val, clase_eje_val, t):
-                    print(f"  → {t} ya existe, saltando.")
+            multi = len(clase_rows) > 1
+            # Ordenar por Tema_Nro (default 1 si falta)
+            clase_rows = sorted(
+                clase_rows,
+                key=lambda r: int(r.get("tema_nro", "1")) if str(r.get("tema_nro", "1")).isdigit() else 1
+            )
+            encuentros_desc = "multi-tema" if multi else "mono-tema"
+            print(f"\n========== Clase eje={eje_val} clase-eje={clase_eje_val} ({encuentros_desc}, "
+                  f"{len(clase_rows)} tema(s)) ==========")
+            for tema_row in clase_rows:
+                tema_nro = tema_row.get("tema_nro", "1")
+                if args.tema_idx is not None and str(args.tema_idx).strip() != str(tema_nro).strip():
                     continue
-                if t == "b1":
-                    docs += run_b1(args, clase_rows)
-                else:
-                    docs += run_b2_b5(args, t, clase_rows)
+                print(f"\n----- Tema {tema_nro}: {tema_row.get('tema', '')} -----")
+                cascada = resolver_cascada_b(tarea, manifest)
+                print(f"  Cascada: {' → '.join(cascada)}")
+                for t in cascada:
+                    if _existe_output(args.materia, eje_val, clase_eje_val, t, tema_nro=tema_nro, multi=multi):
+                        suf = f" tema {tema_nro}" if multi else ""
+                        print(f"  → {t} ya existe{suf}, saltando.")
+                        continue
+                    if t == "b1":
+                        docs += run_b1(args, tema_row, tema_nro=tema_nro, multi=multi)
+                    else:
+                        docs += run_b2_b5(args, t, tema_row, tema_nro=tema_nro, multi=multi)
 
         print(f"\n>>> {len(clases_a_procesar)} clase(s) procesada(s), {len(docs)} documento(s) generado(s). <<<")
     else:
