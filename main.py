@@ -285,10 +285,7 @@ def run_a2(args):
     print(f"\n=== a2 — Plan de Clases de {args.materia} ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
-    titulo = extraer_titulo(doc)
-    if titulo.startswith("|"):
-        titulo = f"Libro de Temas {args.materia}"
-    fname = f"{args.materia}-Plan_De_Clases-{nombre_ref(titulo)}.md"
+    fname = f"{args.materia}-Plan_De_Clases-Libro_de_temas.md"
     r = write_output(OUTPUT / fname, doc)
     print(f"\n⏱  {time.time() - t0:.1f}s")
     return [(fname, doc)] if r else []
@@ -331,7 +328,8 @@ def run_b2_b5(args, tarea_code, clase_rows):
     variables = {**vars_cfg,
                  "eje_numero": r0.get("nro_eje", args.eje),
                  "eje_descripcion": r0.get("eje_descripcion", ""),
-                 "tema": r0.get("tema", "")}
+                 "tema": r0.get("tema", ""),
+                 "actividades": r0.get("actividades", "")}
     if tarea_code in ("b2", "b3", "b5"):
         variables["material_didactico"] = _insumo(args, "b1")
     if tarea_code == "b4":
@@ -409,7 +407,16 @@ def main(argv=None):
             )
         print(f"→ Clase: eje={args.eje} clase-eje={args.clase_eje} | "
               f"tema={clase_rows[0].get('tema', '')} | carácter={clase_rows[0].get('caracter', '')}")
-        docs = run_b1(args, clase_rows) if tarea == "b1" else run_b2_b5(args, tarea, clase_rows)
+        if tarea == "b1":
+            # Cascada B completa: b1 → b2, b3, b5 → b4 (en 1 comando)
+            print("\n>>> Cascada B: b1 → b2, b3, b5, b4 <<<")
+            docs += run_b1(args, clase_rows)
+            docs += run_b2_b5(args, "b2", clase_rows)
+            docs += run_b2_b5(args, "b3", clase_rows)
+            docs += run_b2_b5(args, "b5", clase_rows)
+            docs += run_b2_b5(args, "b4", clase_rows)
+        else:
+            docs = run_b2_b5(args, tarea, clase_rows)
     else:
         raise SystemExit(f"Tarea '{tarea}' no implementada todavía.")
 

@@ -1,6 +1,10 @@
 {% extends "specificacion-principal.md" %}
 
 {% block tarea %}
+El documento debe comenzar con el título, seguido de EXACTAMENTE estas dos líneas (cada una en su renglón):
+Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+Tema: {{ tema }}. {{ actividades }}.
+
 Generá la sección "Resolución de la actividad" para la siguiente actividad áulica:
 
 === ACTIVIDAD ÁULICA ===

@@ -11,11 +11,12 @@ Elaborá una Planificación Áulica detallada basada en el siguiente material de
 
 DATOS DE CONTEXTO:
 - Curso: {{ Variable_Curso }} | Carrera: {{ Variable_Carrera }} | Materia: {{ Variable_Materia }} | Docente: {{ Variable_Docente }} | Establecimiento: {{ Variable_Establecimiento }}
-- Eje temático: {{ eje_numero }} — {{ eje_descripcion }} | Tema: {{ tema }}
 
-El documento debe comenzar con el título **PLANIFICACIÓN ÁULICA**, seguido de los datos de contexto, y desarrollar los siguientes apartados:
-- Eje Temático: número y nombre correspondiente.
-- Referencia de Clase: tema específico (indicar explícitamente si se trata de una clase de repaso).
+El documento debe comenzar con el título **PLANIFICACIÓN ÁULICA**, seguido de EXACTAMENTE estas dos líneas (cada una en su renglón):
+Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+Tema: {{ tema }}. {{ actividades }}.
+
+A continuación, desarrollar los siguientes apartados:
 - Objetivos de Aprendizaje: enunciados en capacidades a lograr por el estudiante.
 - Contenidos: detalle de los temas técnicos tratados.
 - Secuencia Didáctica (formato tabla): dividir la clase en tres momentos (Inicio, Desarrollo y Cierre), especificando actividades del docente, actividades del alumno y tiempo estimado.

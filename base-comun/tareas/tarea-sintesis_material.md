@@ -1,6 +1,10 @@
 {% extends "specificacion-principal.md" %}
 
 {% block tarea %}
+El documento debe comenzar con el título, seguido de EXACTAMENTE estas dos líneas (cada una en su renglón):
+Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+Tema: {{ tema }}. {{ actividades }}.
+
 Generá la sección "Síntesis y Conclusión" para el siguiente material didáctico:
 
 === MATERIAL DIDÁCTICO ===

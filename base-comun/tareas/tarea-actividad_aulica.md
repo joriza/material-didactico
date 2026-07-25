@@ -3,6 +3,10 @@
 {% block tarea %}
 Actuá como experto en educación de nivel secundario, especializado en técnicas de aprendizaje colaborativo.
 
+El documento debe comenzar con el título, seguido de EXACTAMENTE estas dos líneas (cada una en su renglón):
+Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+Tema: {{ tema }}. {{ actividades }}.
+
 Los equipos de trabajo están conformados por 4 integrantes.
 
 Según el texto del material didáctico entregado a continuación, redactá una actividad que indique claramente que debe realizarse llevando a cabo una técnica de aprendizaje colaborativo, pero sin indicar cuál es la técnica utilizada en la consigna de la actividad.
