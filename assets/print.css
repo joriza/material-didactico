@@ -1,0 +1,173 @@
+/*
+ * print.css — estilos base para PDFs de material didáctico.
+ *
+ * Uso desde convert.ps1:
+ *   .\convert.ps1 -Css .\assets\print.css -Path output\tmp02
+ *
+ * Editá este archivo libremente. Es solo un punto de partida.
+ */
+
+/* ---- Página ---- */
+@page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+}
+
+/* ---- Tipografía base ---- */
+body {
+    font-family: "Arial", "Helvetica", sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+p {
+    margin: 0.6em 0;
+    text-align: justify;
+}
+
+/* ---- Encabezados ---- */
+h1, h2, h3, h4 {
+    font-family: "Arial", "Helvetica", sans-serif;
+    color: #1a4d8f;
+    line-height: 1.25;
+    page-break-after: avoid;
+}
+
+h1 {
+    font-size: 20pt;
+    border-bottom: 2px solid #1a4d8f;
+    padding-bottom: 4px;
+    margin-top: 0;
+    page-break-before: always;
+}
+
+/* El primer h1 (titulo del documento) no debe forzar salto antes */
+h1:first-of-type {
+    page-break-before: avoid;
+}
+
+h2 {
+    font-size: 15pt;
+    color: #2a6db0;
+    margin-top: 1.4em;
+    border-bottom: 1px solid #c5d4e3;
+    padding-bottom: 2px;
+}
+
+h3 {
+    font-size: 12.5pt;
+    color: #3a7fb8;
+    margin-top: 1.1em;
+}
+
+h4 {
+    font-size: 11pt;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---- Encabezado Eje temático / Tema (al inicio de cada tipo b) ---- */
+/* Pandoc lo emite como párrafos sueltos: los destacamos */
+body > p:first-of-type,
+body > p:nth-of-type(2) {
+    font-weight: bold;
+    color: #1a4d8f;
+    margin: 0.2em 0;
+}
+
+/* ---- Listas ---- */
+ul, ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+}
+
+li {
+    margin: 0.2em 0;
+}
+
+/* ---- Énfasis y citas ---- */
+strong { color: #111; }
+em { color: #333; }
+blockquote {
+    border-left: 3px solid #b5c8db;
+    background: #f4f7fb;
+    margin: 0.8em 0;
+    padding: 0.4em 1em;
+    color: #444;
+    font-style: italic;
+}
+
+/* ---- Código ---- */
+code {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 9.5pt;
+    background: #f4f4f4;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #b3261e;
+}
+
+pre {
+    background: #f6f8fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 0.8em;
+    overflow-x: auto;
+    page-break-inside: avoid;
+    font-size: 9pt;
+    line-height: 1.4;
+}
+
+pre code {
+    background: transparent;
+    color: #1a1a1a;
+    padding: 0;
+}
+
+/* ---- Tablas ---- */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+}
+
+th, td {
+    border: 1px solid #aaa;
+    padding: 6px 9px;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background: #eef3f8;
+    font-weight: bold;
+    color: #1a4d8f;
+}
+
+/* Zebra stripe suave en tbody */
+tbody tr:nth-child(even) {
+    background: #fafcfe;
+}
+
+/* ---- Regla horizontal ---- */
+hr {
+    border: none;
+    border-top: 1px solid #c5d4e3;
+    margin: 1.5em 0;
+}
+
+/* ---- Enlaces ---- */
+a {
+    color: #1a4d8f;
+    text-decoration: none;
+}
+
+/* ---- Evitar viudas y huérfanas ---- */
+p, li {
+    orphans: 3;
+    widows: 3;
+}
