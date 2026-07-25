@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Convertir todos los .md de una carpeta a PDF.
 
@@ -66,7 +66,7 @@ function Install-Hint([string]$eng) {
 function Convert-One([string]$engine, [string]$md, [string]$pdf, [string]$css) {
     $cssOk = $css -and (Test-Path -LiteralPath $css)
     if ($css -and -not $cssOk) {
-        Write-Host "  [warn] CSS no encontrado: $css — se omite" -ForegroundColor Yellow
+        Write-Host "  [warn] CSS no encontrado: $css - se omite" -ForegroundColor Yellow
     }
     switch ($engine) {
         "pandoc-xelatex" {
@@ -105,7 +105,7 @@ function Convert-One([string]$engine, [string]$md, [string]$pdf, [string]$css) {
 $candidate = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path (Get-Location) $Path }
 if (-not (Test-Path -LiteralPath $candidate -PathType Container)) {
     Write-Host "La carpeta '$candidate' no existe (CWD: $(Get-Location))." -ForegroundColor Red
-    Write-Host "Uso: .\convert.ps1 -Path <carpeta>" -ForegroundColor Yellow
+    Write-Host "Uso: .\convert.ps1 -Path CARPETA" -ForegroundColor Yellow
     exit 1
 }
 $resolved = (Get-Item -LiteralPath $candidate).FullName
@@ -139,7 +139,7 @@ if ($Css) {
     if (Test-Path -LiteralPath $Css) {
         Write-Host "CSS: $Css" -ForegroundColor Cyan
     } else {
-        Write-Host "CSS: $Css (NO ENCONTRADO — se omitira)" -ForegroundColor Yellow
+        Write-Host "CSS: $Css (NO ENCONTRADO - se omitira)" -ForegroundColor Yellow
     }
 }
 Write-Host ""
