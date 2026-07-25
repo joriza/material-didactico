@@ -18,8 +18,8 @@ DIRECTRICES PEDAGÓGICAS:
 
 REGLAS DE FORMATO Y PRESENTACIÓN:
 - Título inicial: la respuesta debe comenzar con un título que referencie de forma breve el contenido general del texto.
-- Encabezado: inmediatamente después del título, colocá EXACTAMENTE estas dos líneas (cada una en su renglón, sin variaciones):
-  Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+- Encabezado: inmediatamente después del título, colocá EXACTAMENTE estas dos líneas, CADA UNA EN SU PROPIO RENGLÓN (la primera terminada con DOS ESPACIOS para forzar el salto de línea Markdown; sin viñeta, sin variaciones):
+  Eje temático: {{ eje_numero }} — {{ eje_descripcion }}  
   Tema: {{ tema }}. {{ actividades }}.
 - Restricciones: no mencionar el número de la clase dentro del cuerpo del texto. No usar LaTeX.
 - Longitud: el documento debe alcanzar una extensión de al menos 20.000 caracteres. Lo más extenso y claro posible.

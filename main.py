@@ -295,8 +295,8 @@ def run_a1(args):
     titulo = extraer_titulo(doc)
     ref = "Plan_anual" if titulo.lower().startswith("plan") else nombre_ref(titulo)
     fname = f"{args.materia}-Plan_Anual-{ref}.md"
-    r = write_output(OUTPUT / fname, doc)
     print(f"\n⏱  {time.time() - t0:.1f}s")
+    r = write_output(OUTPUT / fname, doc)
     return [(fname, doc)] if r else []
 
 
@@ -316,8 +316,8 @@ def run_a2(args):
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
     fname = f"{args.materia}-Plan_De_Clases-Libro_de_temas.md"
-    r = write_output(OUTPUT / fname, doc)
     print(f"\n⏱  {time.time() - t0:.1f}s")
+    r = write_output(OUTPUT / fname, doc)
     return [(fname, doc)] if r else []
 
 
@@ -347,8 +347,8 @@ def run_b1(args, clase_rows):
     doc = call_llm(client, model, prompt, dt)
     ref = nombre_ref(extraer_titulo(doc))
     fname = nombre_archivo(args.materia, args.eje, args.clase_eje, "b1", ref)
-    r = write_output(OUTPUT / fname, doc)
     print(f"\n⏱  {time.time() - t0:.1f}s")
+    r = write_output(OUTPUT / fname, doc)
     return [(fname, doc)] if r else []
 
 
@@ -373,8 +373,8 @@ def run_b2_b5(args, tarea_code, clase_rows):
     doc = call_llm(client, model, prompt, dt)
     ref = _nombre_ref_de_b1(args.materia, args.eje, args.clase_eje) or nombre_ref(extraer_titulo(doc))
     fname = nombre_archivo(args.materia, args.eje, args.clase_eje, tarea_code, ref)
-    r = write_output(OUTPUT / fname, doc)
     print(f"\n⏱  {time.time() - t0:.1f}s")
+    r = write_output(OUTPUT / fname, doc)
     return [(fname, doc)] if r else []
 
 

@@ -3,8 +3,8 @@
 {% block tarea %}
 Actuá como experto en educación de nivel secundario, especializado en técnicas de aprendizaje colaborativo.
 
-El documento debe comenzar con el título, seguido de EXACTAMENTE estas dos líneas (cada una en su renglón):
-Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+El documento debe comenzar con el título, seguido de EXACTAMENTE estas dos líneas, CADA UNA EN SU PROPIO RENGLÓN (la primera terminada con DOS ESPACIOS para forzar el salto de línea Markdown):
+Eje temático: {{ eje_numero }} — {{ eje_descripcion }}  
 Tema: {{ tema }}. {{ actividades }}.
 
 Los equipos de trabajo están conformados por 4 integrantes.
