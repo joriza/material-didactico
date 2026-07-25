@@ -11,7 +11,7 @@
       4. markdown-pdf          (Node, fallback)
 
 .PARAMETER Path
-    Carpeta con los .md (default: ./output).
+    Carpeta con los .md (default: . = directorio actual).
 
 .PARAMETER Engine
     Forzar un motor: pandoc-xelatex | pandoc-wkhtmltopdf | md-to-pdf | markdown-pdf.
@@ -27,7 +27,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Path = "output",
+    [string]$Path = ".",
     [string]$Engine,
     [switch]$Force
 )
@@ -78,12 +78,13 @@ function Convert-One([string]$engine, [string]$md, [string]$pdf) {
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-$resolved = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path $PSScriptRoot $Path }
-if (-not (Test-Path -LiteralPath $resolved -PathType Container)) {
-    Write-Host "La carpeta '$resolved' no existe." -ForegroundColor Red
+$candidate = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path (Get-Location) $Path }
+if (-not (Test-Path -LiteralPath $candidate -PathType Container)) {
+    Write-Host "La carpeta '$candidate' no existe (CWD: $(Get-Location))." -ForegroundColor Red
     Write-Host "Uso: .\convert.ps1 -Path <carpeta>" -ForegroundColor Yellow
     exit 1
 }
+$resolved = (Get-Item -LiteralPath $candidate).FullName
 
 $engine = if ($Engine) { $Engine } else { Get-AvailableEngine }
 if (-not $engine -or (-not (Test-Command pandoc) -and $engine -notlike "md-to-pdf" -and $engine -notlike "markdown-pdf")) {
