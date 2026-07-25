@@ -1,0 +1,106 @@
+# Manifiesto de tareas — jerarquía, dependencias, iteración y fusión.
+# Única fuente de verdad para la cascada. La app lo lee para resolver el orden
+# topológico y saber qué regenerar. Editá este archivo (no el código) para
+# añadir/ajustar tareas.
+
+tareas:
+  a1:
+    archivo: tarea-plan_anual.md
+    descripcion: Planificación anual
+    depende_de: []
+    dependientes: [a2]
+
+  a2:
+    archivo: tarea-plan_de_clases.md
+    descripcion: Planificación de clases (libro de temas)
+    depende_de: [a1]
+    dependientes: [b1]
+    # a2 es PRERREQUISITO de b1/c1/d1: contiene la tabla de clases.
+
+  b1:
+    archivo: tarea-material_didactico.md
+    descripcion: Material didáctico
+    depende_de: [a2]
+    dependientes: [b2, b3, b5]
+    itera: por_clase        # default: un material por clase (temas combinados)
+
+  b2:
+    archivo: null            # plantilla pendiente
+    descripcion: Actividad áulica
+    depende_de: [b1]
+    dependientes: [b4]
+
+  b3:
+    archivo: null
+    descripcion: Síntesis del material didáctico
+    depende_de: [b1]
+
+  b4:
+    archivo: null
+    descripcion: Respuestas de la actividad áulica
+    depende_de: [b2]
+
+  b5:
+    archivo: null
+    descripcion: Planificación áulica (guía del docente para la clase)
+    depende_de: [b1]
+
+  c1:
+    archivo: null
+    descripcion: Cuestionario de evaluación
+    depende_de: [b1]
+    dependientes: [c2]
+    multi: true              # consume varios b1 (indicados por naming)
+
+  c2:
+    archivo: null
+    descripcion: Respuestas de la evaluación
+    depende_de: [c1]
+
+  d1:
+    archivo: null
+    descripcion: Actividad integradora
+    depende_de: [b1]
+    dependientes: [d2]
+    multi: true
+
+  d2:
+    archivo: null
+    descripcion: Respuestas de la actividad integradora
+    depende_de: [d1]
+
+# Grupos de fusión: combinan varias tareas en un único documento (ej. para
+# imprimir juntos). El nombre del archivo resultante une los tipos con "+".
+fusiones:
+  impresion_docente:
+    tareas: [b3, b4]
+    descripcion: Síntesis + respuestas de la actividad, para imprimir juntos
+
+# Vocabulario controlado de la columna "Carácter/Objetivo" de a2.
+# La app valida que el valor esté en esta lista (warn/rechazo según config).
+vocabulario_caracter:
+  - Presentación
+  - Diagnóstico
+  - Teórica
+  - Práctica
+  - Teórico-Práctica
+  - Dialogada
+  - Reflexiva
+  - Aplicación
+  - Argumentativa
+  - Evaluativa
+  - Evaluativa (en proceso o final)
+  - Experimental
+  - Fijación
+  - Informativa
+  - Integración
+  - Interpretativa
+  - Investigación
+  - Lectura
+  - Lúdica
+  - Orientadora
+  - Repaso
+  - Revisión
+  - Taller
+  - Observación
+  - Otras

@@ -4,3 +4,12 @@ node_modules/
 output*/
 *.log
 .DS_Store
+
+# Secretos — NUNCA commitear la API key real. Usar config-llm.example.json.
+config-llm.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
