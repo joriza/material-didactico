@@ -1,33 +1,27 @@
 {% extends "specificacion-principal.md" %}
 
 {% block tarea %}
-Diseñá material de estudio completo y profundo.
+Utilizando los datos de configuración, actuá como docente experto de escuela técnica para la materia {{ Variable_Materia }} del curso {{ Variable_Curso }} en la carrera {{ Variable_Carrera }}. El docente a cargo es {{ Variable_Docente }}.
 
-DATOS DE CONTEXTO:
-- Materia: {{ Variable_Materia }}
-- Carrera: {{ Variable_Carrera }}
-- Curso: {{ Variable_Curso }}
-- Docente a cargo: {{ Variable_Docente }}
+DATOS DE LA CLASE:
+- Eje temático: {{ eje_numero }} — {{ eje_descripcion }}
+- Tema del día: {{ tema }}
+- Actividades planificadas: {{ actividades }}
 
-Organizá la explicación por temas clave, con ejemplos para mejorar la comprensión. Explicá los "por qué" y los "cómo" con gran detalle, utilizando lenguaje técnico pero accesible para un estudiante de escuela para adultos.
+Diseñá material didáctico completo y profundo sobre el tema del día.
 
-MARCO DE REFERENCIA:
-- Carácter de la clase: {{ caracter }}  (orienta el enfoque del material)
-{% if eje_tematico %}- Eje temático: {{ eje_tematico }}{% endif %}
+DIRECTRICES PEDAGÓGICAS:
+1. Estructura: organizá la explicación mediante temas clave lógicamente secuenciados.
+2. Profundidad: explicá los "por qué" y los "cómo" con gran detalle, utilizando lenguaje técnico pero accesible para un estudiante de escuela para adultos.
+3. Ejemplificación: incorporá ejemplos prácticos para facilitar la comprensión.
+4. Delimitación del alcance: cuidá de no profundizar en temáticas que serán el eje central de clases posteriores.
 
-TEMAS A DESARROLLAR EN ESTA CLASE:
-{% for tema in temas %}
-- {{ tema }}
-{% endfor %}
+REGLAS DE FORMATO Y PRESENTACIÓN:
+- Título inicial: la respuesta debe comenzar con un título que referencie de forma breve el contenido general del texto.
+- Encabezado: inmediatamente después del título, indicá el número y nombre del eje temático. A continuación, especificá el o los temas a tratar en la clase (o la aclaración correspondiente si es clase de repaso).
+- Restricciones: no mencionar el número de la clase dentro del cuerpo del texto. No usar LaTeX.
+- Longitud: el documento debe alcanzar una extensión de al menos 20.000 caracteres. Lo más extenso y claro posible.
+- Tono: documento finalizado. Prohibidos los cierres dubitativos o propositivos.
 
-REGLAS DE PRESENTACIÓN:
-- Como título del documento, colocá una versión sintética de los temas tratados.
-- Indicá el número y nombre del eje temático.
-- Detallá todos los temas a tratar en esta clase. Si es una clase de repaso (carácter "Repaso"), debe indicarlo explícitamente.
-
-LONGITUD: el documento debe tener **al menos 20000 caracteres** (incluyendo espacios).
-
-No incluyas el número de clase en el texto del documento.
-
-No escribas la sección "Síntesis y Conclusión"; esa sección se genera como tarea aparte.
+No incluyas la sección "Síntesis y Conclusión"; esa sección se genera como tarea aparte.
 {% endblock %}

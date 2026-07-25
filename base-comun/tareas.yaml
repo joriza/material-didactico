@@ -31,17 +31,17 @@ tareas:
     dependientes: [b4]
 
   b3:
-    archivo: null
+    archivo: tarea-sintesis_material.md
     descripcion: Síntesis del material didáctico
     depende_de: [b1]
 
   b4:
-    archivo: null
+    archivo: tarea-respuestas_actividad_aulica.md
     descripcion: Respuestas de la actividad áulica
     depende_de: [b2]
 
   b5:
-    archivo: null
+    archivo: tarea-planificacion_aulica.md
     descripcion: Planificación áulica (guía del docente para la clase)
     depende_de: [b1]
 

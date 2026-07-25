@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-"""z-material-didactico — generador spec-driven de material didáctico (Python + Jinja2).
+"""z-material-didactico — generador spec-driven (Python + Jinja2).
 
-v1: flujo de la tarea b1 (material didáctico) sobre una clase de a2.
-    Lee config-llm.json, config-datos.md y a2 (plan de clases); renderiza la
-    plantilla Jinja2 (tarea que hereda la base común); llama al LLM con
-    streaming; arma el naming; escribe en output/ (con confirmación de
-    sobrescritura). Las demás tareas y el DAG completo se añaden después.
+Tareas: a1, a2, b1-b5. Naming: <sigla>-<nro_eje><nro_clase_eje>-<Tarea>-<nombre_≤30>.md
 """
 import argparse
 import json
 import os
 import re
 import sys
+import time
 import unicodedata
 from pathlib import Path
 
@@ -24,35 +21,35 @@ BASE_COMUN = ROOT / "base-comun"
 MATERIAS = ROOT / "materias"
 OUTPUT = ROOT / "output"
 
-# Nombre legible de cada tarea para el naming (PascalCase con _).
 TAREA_LEGIBLE = {
-    "a1": "Plan_Anual",
-    "a2": "Plan_De_Clases",
-    "b1": "Material_Didactico",
-    "b2": "Actividad_Aulica",
-    "b3": "Sintesis",
-    "b4": "Respuestas_Actividad",
-    "b5": "Planificacion_Aulica",
-    "c1": "Cuestionario_Evaluacion",
-    "c2": "Respuestas_Evaluacion",
-    "d1": "Actividad_Integradora",
-    "d2": "Respuestas_Integradora",
+    "a1": "Plan_Anual", "a2": "Plan_De_Clases",
+    "b1": "Material_Didactico", "b2": "Actividad_Aulica",
+    "b3": "Sintesis", "b4": "Respuestas_Actividad", "b5": "Planificacion_Aulica",
+    "c1": "Cuestionario_Evaluacion", "c2": "Respuestas_Evaluacion",
+    "d1": "Actividad_Integradora", "d2": "Respuestas_Integradora",
 }
 
-# Archivo de plantilla por código de tarea (debe coincidir con tareas.yaml).
 TAREA_TEMPLATE = {
     "a1": "tareas/tarea-plan_anual.md",
     "a2": "tareas/tarea-plan_de_clases.md",
     "b1": "tareas/tarea-material_didactico.md",
     "b2": "tareas/tarea-actividad_aulica.md",
+    "b3": "tareas/tarea-sintesis_material.md",
+    "b4": "tareas/tarea-respuestas_actividad_aulica.md",
+    "b5": "tareas/tarea-planificacion_aulica.md",
 }
 
+TAREAS_B = ["b1", "b2", "b3", "b4", "b5"]
+
 
 # --------------------------------------------------------------------------
-# Carga de datos
+# Utilidades
 # --------------------------------------------------------------------------
+def _strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
 def parse_config_datos(path: Path) -> dict:
-    """Parse '- **Clave**: valor' de config-datos.md -> dict."""
     variables = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         m = re.match(r"^\s*-\s*\*\*([^*]+)\*\*\s*:\s*(.+?)\s*$", line)
@@ -65,22 +62,36 @@ def load_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+def _find_latest(directory: Path, pattern: str):
+    matches = sorted(Path(directory).glob(pattern))
+    return matches[-1] if matches else None
+
+
 # --------------------------------------------------------------------------
-# a2: tabla de clases (libro de temas)
+# a2 — tabla de clases (8 columnas canónicas)
 # --------------------------------------------------------------------------
 def _canon_key(k: str) -> str:
+    """Normaliza el encabezado de columna a una clave canónica."""
     k = _strip_accents(k.strip().lower())
-    k = re.sub(r"^n[oºro.\s]+", "", k)  # quitar prefijo "nº " / "nro "
-    k = (k.replace("carácter/objetivo", "caracter")
-           .replace("caracter/objetivo", "caracter")
-           .replace("tema del día", "tema")
-           .replace("eje temático", "eje_tematico"))
-    return k.strip()
+    explicit = {
+        "nro_eje": "nro_eje", "nro eje": "nro_eje", "numero de eje": "nro_eje",
+        "nº eje": "nro_eje", "nro. eje": "nro_eje", "n_eje": "nro_eje",
+        "nro_clase_eje": "nro_clase_eje", "nro clase eje": "nro_clase_eje",
+        "nº clase eje": "nro_clase_eje", "clase_eje": "nro_clase_eje", "clase eje": "nro_clase_eje",
+        "eje": "eje_descripcion", "eje tematico": "eje_descripcion",
+        "carácter/objetivo": "caracter", "caracter/objetivo": "caracter",
+        "carácter": "caracter", "caracter": "caracter", "objetivo": "caracter",
+        "tema del día": "tema", "tema del dia": "tema", "tema": "tema",
+        "actividades": "actividades", "fecha": "fecha", "id": "id",
+        "nº clase": "nro_clase_viejo", "nro clase": "nro_clase_viejo",
+    }
+    if k in explicit:
+        return explicit[k]
+    return re.sub(r"^n[oºro.\s]+", "", k).strip() or k
 
 
 def parse_a2_table(path: Path) -> list[dict]:
-    """Parsea la tabla Markdown de a2 -> lista de dicts con claves canónicas
-    (clase, eje, eje_tematico, caracter, tema, actividades, fecha)."""
+    """Parsea la tabla Markdown de a2 → lista de dicts con claves canónicas."""
     rows, header = [], None
     for line in path.read_text(encoding="utf-8").splitlines():
         s = line.strip()
@@ -93,17 +104,17 @@ def parse_a2_table(path: Path) -> list[dict]:
             header = [_canon_key(c) for c in cells]
             continue
         if all(re.fullmatch(r"[:\s-]*", c) for c in cells):
-            continue  # fila separadora
+            continue
         rows.append(dict(zip(header, cells)))
     return rows
 
 
-def filter_class(rows: list[dict], clase, eje=None) -> list[dict]:
+def filter_by_eje(rows: list[dict], nro_eje, nro_clase_eje=None) -> list[dict]:
     out = []
     for r in rows:
-        if str(r.get("clase", "")).strip() != str(clase).strip():
+        if str(r.get("nro_eje", "")).strip() != str(nro_eje).strip():
             continue
-        if eje is not None and str(r.get("eje", "")).strip() != str(eje).strip():
+        if nro_clase_eje is not None and str(r.get("nro_clase_eje", "")).strip() != str(nro_clase_eje).strip():
             continue
         out.append(r)
     return out
@@ -113,11 +124,7 @@ def filter_class(rows: list[dict], clase, eje=None) -> list[dict]:
 # Jinja2
 # --------------------------------------------------------------------------
 def make_env() -> Environment:
-    return Environment(
-        loader=FileSystemLoader(str(BASE_COMUN)),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
+    return Environment(loader=FileSystemLoader(str(BASE_COMUN)), trim_blocks=True, lstrip_blocks=True)
 
 
 def render(env: Environment, template_rel: str, variables: dict) -> str:
@@ -131,8 +138,6 @@ def load_client(config_llm_path: Path, provider=None, model_override=None):
     cfg = json.loads(config_llm_path.read_text(encoding="utf-8"))
     providers = cfg.get("provider", {})
     key = provider or cfg.get("default") or next(iter(providers))
-    if key not in providers:
-        raise SystemExit(f"Provider '{key}' no existe en config-llm.json")
     p = providers[key]
     opts = p.get("options", {})
     base_url = opts["baseURL"]
@@ -143,20 +148,14 @@ def load_client(config_llm_path: Path, provider=None, model_override=None):
         else:
             api_key = os.environ.get("ZHIPU_API_KEY", "")
     if not api_key:
-        raise SystemExit(
-            f"Falta API key para provider '{key}'. Cargala en config-llm.json o definí ZHIPU_API_KEY."
-        )
-    models = p.get("models", {})
-    model = model_override or next(iter(models))
+        raise SystemExit(f"Falta API key para provider '{key}'.")
+    model = model_override or next(iter(p.get("models", {})))
     disable_thinking = bool(p.get("disableThinking", False))
     return OpenAI(base_url=base_url, api_key=api_key), model, key, base_url, disable_thinking
 
 
 def call_llm(client, model, prompt, disable_thinking=False, temperature=0.2, max_tokens=16384) -> str:
-    extra_body = None
-    if disable_thinking:
-        # llama.cpp / Qwen3-style: apaga el reasoning.
-        extra_body = {"chat_template_kwargs": {"enable_thinking": False}}
+    extra_body = {"chat_template_kwargs": {"enable_thinking": False}} if disable_thinking else None
     stream = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
@@ -181,15 +180,14 @@ def call_llm(client, model, prompt, disable_thinking=False, temperature=0.2, max
 # --------------------------------------------------------------------------
 # Naming
 # --------------------------------------------------------------------------
-def _strip_accents(s: str) -> str:
-    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
-
-
-def nombre_ref(titulo: str) -> str:
-    """Título del doc -> Nombre_Referencial: primera mayúscula + _, sin tildes."""
+def nombre_ref(titulo: str, max_len: int = 30) -> str:
+    """Titulo → Nombre_Referencial: primera mayúscula + _, sin tildes, ≤ max_len."""
     s = _strip_accents(titulo).lower()
     s = re.sub(r"[^a-z0-9]+", "_", s).strip("_") or "material"
-    return s[0].upper() + s[1:]
+    s = s[0].upper() + s[1:]
+    if len(s) > max_len:
+        s = s[:max_len].rsplit("_", 1)[0] or s[:max_len]
+    return s
 
 
 def pascal(texto: str) -> str:
@@ -197,10 +195,8 @@ def pascal(texto: str) -> str:
     return "_".join(p.capitalize() for p in palabras if p)
 
 
-def nombre_archivo(sigla, eje, sec, tema, tarea_code, nombre_referencial) -> str:
-    codigo = f"{sigla}-{eje}{sec}"
-    if tema is not None:
-        codigo += str(tema)
+def nombre_archivo(sigla, nro_eje, nro_clase_eje, tarea_code, nombre_referencial) -> str:
+    codigo = f"{sigla}-{nro_eje}{nro_clase_eje}"
     tarea_leg = TAREA_LEGIBLE.get(tarea_code, pascal(tarea_code))
     return f"{codigo}-{tarea_leg}-{nombre_referencial}.md"
 
@@ -216,6 +212,15 @@ def extraer_titulo(doc: str) -> str:
     return "documento"
 
 
+def _nombre_ref_de_b1(sigla, nro_eje, nro_clase_eje):
+    """Busca el archivo b1 de esa clase y extrae su Nombre_Referencial (compartido)."""
+    pref = f"{sigla}-{nro_eje}{nro_clase_eje}-Material_Didactico-"
+    f = _find_latest(OUTPUT, f"{pref}*.md")
+    if not f:
+        return None
+    return f.stem[len(pref):]
+
+
 # --------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------
@@ -229,176 +234,185 @@ def write_output(path: Path, content: str):
     return path
 
 
-def _find_latest(directory: Path, pattern: str):
-    matches = sorted(Path(directory).glob(pattern))
-    return matches[-1] if matches else None
-
-
 # --------------------------------------------------------------------------
-# Orquestación: a1 (plan anual) y a2 (plan de clases)
+# Orquestación
 # --------------------------------------------------------------------------
-def run_a1(args) -> list[tuple[str, str]]:
+def _cargar_comun(args):
     materia_dir = MATERIAS / args.materia
+    if not materia_dir.exists():
+        raise SystemExit(f"No existe la materia '{args.materia}' en {MATERIAS}")
     vars_cfg = parse_config_datos(materia_dir / "config-datos.md")
-    contenidos = (materia_dir / "datos-contenidos_minimos.md").read_text(encoding="utf-8")
-    variables = {
-        **vars_cfg,
-        "contenidos_minimos": contenidos,
-        "Reglas_ciclo_lectivo": vars_cfg.get("Reglas_ciclo_lectivo", "(sin reglas adicionales)"),
-        "Reglas_cuatrimestres": vars_cfg.get("Reglas_cuatrimestres", "(sin reglas adicionales)"),
-    }
+    contenidos_path = materia_dir / "datos-contenidos_minimos.md"
+    contenidos = contenidos_path.read_text(encoding="utf-8") if contenidos_path.exists() else ""
     env = make_env()
-    client, model, pkey, base_url, dt = load_client(
-        BASE_COMUN / "config-llm.json", args.provider, args.modelo
-    )
-    print(f"→ LLM: provider={pkey} model={model} @ {base_url}")
+    client, model, _, _, dt = load_client(BASE_COMUN / "config-llm.json", args.provider, args.modelo)
+    print(f"→ LLM: provider={args.provider or '(default)'} model={model}")
+    return materia_dir, vars_cfg, contenidos, env, (client, model, dt)
+
+
+def run_a1(args):
+    _, vars_cfg, contenidos, env, (client, model, dt) = _cargar_comun(args)
+    variables = {**vars_cfg, "contenidos_minimos": contenidos,
+                 "Reglas_ciclo_lectivo": vars_cfg.get("Reglas_ciclo_lectivo", ""),
+                 "Reglas_cuatrimestres": vars_cfg.get("Reglas_cuatrimestres", "")}
     prompt = render(env, TAREA_TEMPLATE["a1"], variables)
     if args.dry_run:
         print("\n--- PROMPT (dry-run, a1) ---\n" + prompt)
         return []
     print(f"\n=== a1 — Plan Anual de {args.materia} ===")
+    t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
-    ref = nombre_ref(extraer_titulo(doc))
+    titulo = extraer_titulo(doc)
+    ref = "Plan_anual" if titulo.lower().startswith("plan") else nombre_ref(titulo)
     fname = f"{args.materia}-Plan_Anual-{ref}.md"
-    return [(fname, doc)] if write_output(OUTPUT / fname, doc) else []
+    r = write_output(OUTPUT / fname, doc)
+    print(f"\n⏱  {time.time() - t0:.1f}s")
+    return [(fname, doc)] if r else []
 
 
-def run_a2(args) -> list[tuple[str, str]]:
-    materia_dir = MATERIAS / args.materia
-    vars_cfg = parse_config_datos(materia_dir / "config-datos.md")
-    contenidos = (materia_dir / "datos-contenidos_minimos.md").read_text(encoding="utf-8")
-
-    # a2 depende de a1 (plan anual): ruta explícita o el más reciente en output/.
+def run_a2(args):
+    _, vars_cfg, contenidos, env, (client, model, dt) = _cargar_comun(args)
     a1_path = Path(args.a1) if args.a1 else _find_latest(OUTPUT, f"{args.materia}-Plan_Anual-*.md")
     if not a1_path or not a1_path.exists():
-        raise SystemExit("No se encontró a1 (plan anual). Generá a1 primero o usá --a1 <ruta>.")
-
-    variables = {
-        **vars_cfg,
-        "contenidos_minimos": contenidos,
-        "planificacion_anual": a1_path.read_text(encoding="utf-8"),
-    }
-    env = make_env()
-    client, model, pkey, base_url, dt = load_client(
-        BASE_COMUN / "config-llm.json", args.provider, args.modelo
-    )
-    print(f"→ LLM: provider={pkey} model={model} @ {base_url}")
+        raise SystemExit("No se encontró a1. Generá a1 primero o usá --a1 <ruta>.")
+    variables = {**vars_cfg, "contenidos_minimos": contenidos,
+                 "planificacion_anual": a1_path.read_text(encoding="utf-8")}
     print(f"→ Usando a1: {a1_path.name}")
     prompt = render(env, TAREA_TEMPLATE["a2"], variables)
     if args.dry_run:
         print("\n--- PROMPT (dry-run, a2) ---\n" + prompt)
         return []
-    print(f"\n=== a2 — Plan de Clases (libro de temas) de {args.materia} ===")
+    print(f"\n=== a2 — Plan de Clases de {args.materia} ===")
+    t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
     titulo = extraer_titulo(doc)
     if titulo.startswith("|"):
-        # a2 puede arrancar con la tabla (sin título "#"); usar un referencial estable.
         titulo = f"Libro de Temas {args.materia}"
-    ref = nombre_ref(titulo)
-    fname = f"{args.materia}-Plan_De_Clases-{ref}.md"
-    return [(fname, doc)] if write_output(OUTPUT / fname, doc) else []
+    fname = f"{args.materia}-Plan_De_Clases-{nombre_ref(titulo)}.md"
+    r = write_output(OUTPUT / fname, doc)
+    print(f"\n⏱  {time.time() - t0:.1f}s")
+    return [(fname, doc)] if r else []
 
 
-# --------------------------------------------------------------------------
-# Orquestación: b1 (material didáctico)
-# --------------------------------------------------------------------------
-def run_b1(args) -> list[tuple[str, str]]:
-    materia_dir = MATERIAS / args.materia
-    if not materia_dir.exists():
-        raise SystemExit(f"No existe la materia '{args.materia}' en {MATERIAS}")
+def _insumo(args, tarea_dep):
+    """Lee el output de una tarea dependiente (b1/b2) para la clase actual."""
+    tarea_leg = TAREA_LEGIBLE[tarea_dep]
+    f = _find_latest(OUTPUT, f"{args.materia}-{args.eje}{args.clase_eje}-{tarea_leg}-*.md")
+    if not f:
+        raise SystemExit(f"No se encontró output de '{tarea_dep}' para esta clase. Generá {tarea_dep} primero.")
+    return f.read_text(encoding="utf-8")
 
-    vars_cfg = parse_config_datos(materia_dir / "config-datos.md")
 
-    # a2 (prerrequisito): ruta explícita, o el más reciente en output/, o ejemplo en la materia.
-    if args.a2:
-        a2_path = Path(args.a2)
-    else:
-        a2_path = _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
-    if not a2_path or not a2_path.exists():
-        a2_path = materia_dir / "ejemplo-planificacion_de_clases.md"
-    if not a2_path.exists():
-        raise SystemExit(f"No se encontró a2 (plan de clases). Generá a2 primero o usá --a2 <ruta>.")
+def run_b1(args, clase_rows):
+    _, vars_cfg, _, env, (client, model, dt) = _cargar_comun(args)
+    r0 = clase_rows[0]
+    variables = {**vars_cfg,
+                 "eje_numero": r0.get("nro_eje", args.eje),
+                 "eje_descripcion": r0.get("eje_descripcion", ""),
+                 "tema": r0.get("tema", ""),
+                 "actividades": r0.get("actividades", "")}
+    prompt = render(env, TAREA_TEMPLATE["b1"], variables)
+    if args.dry_run:
+        print("\n--- PROMPT (dry-run, b1) ---\n" + prompt)
+        return []
+    print(f"\n=== b1 — Material Didáctico (eje {args.eje}, clase-eje {args.clase_eje}) ===")
+    t0 = time.time()
+    doc = call_llm(client, model, prompt, dt)
+    ref = nombre_ref(extraer_titulo(doc))
+    fname = nombre_archivo(args.materia, args.eje, args.clase_eje, "b1", ref)
+    r = write_output(OUTPUT / fname, doc)
+    print(f"\n⏱  {time.time() - t0:.1f}s")
+    return [(fname, doc)] if r else []
 
-    rows = parse_a2_table(a2_path)
-    clase_rows = filter_class(rows, args.clase, args.eje)
-    if not clase_rows:
-        raise SystemExit(f"No se encontró la clase {args.clase} (eje {args.eje}) en {a2_path.name}")
 
-    env = make_env()
-    client, model, pkey, base_url, dt = load_client(
-        BASE_COMUN / "config-llm.json", args.provider, args.modelo
-    )
-    print(f"→ LLM: provider={pkey} model={model} @ {base_url}")
-
-    temas = [r.get("tema", "") for r in clase_rows]
-    caracter = clase_rows[0].get("caracter", "")
-    eje_tematico = clase_rows[0].get("eje_tematico", "")
-    print(f"→ Clase {args.clase} (eje {args.eje}) — carácter: {caracter} | {len(temas)} tema(s)")
-
-    resultados = []
-    if args.por_tema:
-        for i, tema in enumerate(temas, start=1):
-            variables = {**vars_cfg, "caracter": caracter, "eje_tematico": eje_tematico, "temas": [tema]}
-            prompt = render(env, TAREA_TEMPLATE["b1"], variables)
-            if args.dry_run:
-                print(f"\n--- PROMPT (dry-run, tema {i}) ---\n" + prompt)
-                continue
-            print(f"\n=== b1 clase {args.clase} tema {i}: {tema} ===")
-            doc = call_llm(client, model, prompt, dt)
-            ref = nombre_ref(extraer_titulo(doc))
-            fname = nombre_archivo(args.materia, args.eje, args.clase, i, "b1", ref)
-            if write_output(OUTPUT / fname, doc):
-                resultados.append((fname, doc))
-    else:
-        variables = {**vars_cfg, "caracter": caracter, "eje_tematico": eje_tematico, "temas": temas}
-        prompt = render(env, TAREA_TEMPLATE["b1"], variables)
-        if args.dry_run:
-            print("\n--- PROMPT (dry-run, combinado) ---\n" + prompt)
-            return []
-        print(f"\n=== b1 clase {args.clase} (combinado, {len(temas)} tema(s)) ===")
-        doc = call_llm(client, model, prompt, dt)
-        ref = nombre_ref(extraer_titulo(doc))
-        fname = nombre_archivo(args.materia, args.eje, args.clase, None, "b1", ref)
-        if write_output(OUTPUT / fname, doc):
-            resultados.append((fname, doc))
-    return resultados
+def run_b2_b5(args, tarea_code, clase_rows):
+    _, vars_cfg, _, env, (client, model, dt) = _cargar_comun(args)
+    r0 = clase_rows[0]
+    variables = {**vars_cfg,
+                 "eje_numero": r0.get("nro_eje", args.eje),
+                 "eje_descripcion": r0.get("eje_descripcion", ""),
+                 "tema": r0.get("tema", "")}
+    if tarea_code in ("b2", "b3", "b5"):
+        variables["material_didactico"] = _insumo(args, "b1")
+    if tarea_code == "b4":
+        variables["actividad_aulica"] = _insumo(args, "b2")
+    prompt = render(env, TAREA_TEMPLATE[tarea_code], variables)
+    if args.dry_run:
+        print(f"\n--- PROMPT (dry-run, {tarea_code}) ---\n" + prompt)
+        return []
+    print(f"\n=== {tarea_code} — {TAREA_LEGIBLE[tarea_code]} (eje {args.eje}, clase-eje {args.clase_eje}) ===")
+    t0 = time.time()
+    doc = call_llm(client, model, prompt, dt)
+    ref = _nombre_ref_de_b1(args.materia, args.eje, args.clase_eje) or nombre_ref(extraer_titulo(doc))
+    fname = nombre_archivo(args.materia, args.eje, args.clase_eje, tarea_code, ref)
+    r = write_output(OUTPUT / fname, doc)
+    print(f"\n⏱  {time.time() - t0:.1f}s")
+    return [(fname, doc)] if r else []
 
 
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
 def main(argv=None):
-    # Windows: forzar UTF-8 en stdout/stderr para soportar acentos y símbolos (→).
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
         except Exception:
             pass
+
     ap = argparse.ArgumentParser(description="z-material-didactico (generador spec-driven)")
     ap.add_argument("--materia", required=True, help="sigla de materia (ej: IRI)")
-    ap.add_argument("--tarea", default="b1", help="código de tarea (a1, a2, b1)")
-    ap.add_argument("--clase", help="número de clase (requerido para b1)")
-    ap.add_argument("--eje", help="número de eje (ej: 1)")
+    ap.add_argument("--tarea", default="b1", help="a1 | a2 | b1-b5")
+    ap.add_argument("--eje", help="nro_eje (ej: 1)")
+    ap.add_argument("--clase-eje", dest="clase_eje", help="nro_clase_eje (ej: 1)")
+    ap.add_argument("--id", help="id global de la fila (alternativa a --eje/--clase-eje)")
     ap.add_argument("--a2", help="ruta a un a2 (plan de clases) alternativo")
     ap.add_argument("--a1", help="ruta a un a1 (plan anual) alternativo")
-    ap.add_argument("--provider", help="provider de config-llm.json (ej: glm-cloud)")
-    ap.add_argument("--modelo", help="id de modelo (sobreescribe el del provider)")
-    ap.add_argument("--por-tema", action="store_true", help="un material por tema (default: combinado)")
+    ap.add_argument("--provider", help="provider de config-llm.json")
+    ap.add_argument("--modelo", help="id de modelo (sobreescribe)")
     ap.add_argument("--dry-run", action="store_true", help="arma y muestra el prompt sin llamar al LLM")
     args = ap.parse_args(argv)
 
     OUTPUT.mkdir(exist_ok=True)
+    tarea = args.tarea
+    docs = []
 
-    if args.tarea == "b1":
-        if not args.clase:
-            raise SystemExit("b1 requiere --clase (y preferentemente --eje).")
-        docs = run_b1(args)
-    elif args.tarea == "a1":
+    if tarea == "a1":
         docs = run_a1(args)
-    elif args.tarea == "a2":
+    elif tarea == "a2":
         docs = run_a2(args)
+    elif tarea in TAREAS_B:
+        # eje 0 → no genera tipo b
+        if str(args.eje) == "0":
+            print("→ nro_eje=0 (clase sin dictado): no se generan archivos tipo b.")
+            return
+        if not args.eje or (args.clase_eje is None and args.id is None):
+            raise SystemExit(f"{tarea} requiere --eje N --clase-eje M (o --id N).")
+        # resolver a2
+        a2_path = Path(args.a2) if args.a2 else _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
+        if not a2_path or not a2_path.exists():
+            a2_path = MATERIAS / args.materia / "ejemplo-planificacion_de_clases.md"
+        if not a2_path.exists():
+            raise SystemExit("No se encontró a2. Generá a2 primero o usá --a2 <ruta>.")
+        rows = parse_a2_table(a2_path)
+        # por id o por eje+clase-eje
+        if args.id:
+            clase_rows = [r for r in rows if str(r.get("id", "")).strip() == str(args.id).strip()]
+            if clase_rows:
+                args.eje = clase_rows[0].get("nro_eje", args.eje)
+                args.clase_eje = clase_rows[0].get("nro_clase_eje", args.clase_eje)
+        else:
+            clase_rows = filter_by_eje(rows, args.eje, args.clase_eje)
+        if not clase_rows:
+            raise SystemExit(
+                f"No se encontró la clase (eje={args.eje}, clase-eje={args.clase_eje}, id={args.id}) en {a2_path.name}"
+            )
+        print(f"→ Clase: eje={args.eje} clase-eje={args.clase_eje} | "
+              f"tema={clase_rows[0].get('tema', '')} | carácter={clase_rows[0].get('caracter', '')}")
+        docs = run_b1(args, clase_rows) if tarea == "b1" else run_b2_b5(args, tarea, clase_rows)
     else:
-        raise SystemExit(f"Tarea '{args.tarea}' no implementada todavía.")
+        raise SystemExit(f"Tarea '{tarea}' no implementada todavía.")
+
     print("\n=== Generados ===")
     for fname, _ in docs:
         print(" -", fname)

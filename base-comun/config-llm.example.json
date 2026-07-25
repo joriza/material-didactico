@@ -12,14 +12,14 @@
         "local-model": { "name": "local-model" }
       }
     },
-    "glm-cloud": {
+    "glm-cloud2": {
       "name": "glm-cloud",
       "options": {
         "baseURL": "https://api.z.ai/api/coding/paas/v4",
         "apiKey": "PEGA_TU_API_KEY_AQUI"
       },
       "models": {
-        "glm-4.7": { "name": "glm-4.7" }
+        "glm-4.5": { "name": "glm-4.5-flash" }
       }
     }
   }
