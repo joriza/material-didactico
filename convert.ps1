@@ -20,16 +20,23 @@
 .PARAMETER Force
     Regenera los PDFs que ya existen (por defecto se saltan).
 
+.PARAMETER Css
+    Ruta a un archivo .css para aplicar estilos al PDF. Solo soportado por
+    motores basados en HTML (pandoc-wkhtmltopdf, md-to-pdf, markdown-pdf).
+    pandoc-xelatex lo ignora con warning (LaTeX no usa CSS).
+
 .EXAMPLE
     .\convert.ps1
     .\convert.ps1 -Path output
     .\convert.ps1 -Engine md-to-pdf -Force
+    .\convert.ps1 -Css D:\tmp\custom-markdown.css -Path output\tmp02
 #>
 [CmdletBinding()]
 param(
     [string]$Path = ".",
     [string]$Engine,
-    [switch]$Force
+    [switch]$Force,
+    [string]$Css
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,21 +63,38 @@ function Install-Hint([string]$eng) {
     }
 }
 
-function Convert-One([string]$engine, [string]$md, [string]$pdf) {
+function Convert-One([string]$engine, [string]$md, [string]$pdf, [string]$css) {
+    $cssOk = $css -and (Test-Path -LiteralPath $css)
+    if ($css -and -not $cssOk) {
+        Write-Host "  [warn] CSS no encontrado: $css — se omite" -ForegroundColor Yellow
+    }
     switch ($engine) {
         "pandoc-xelatex" {
+            if ($cssOk) {
+                Write-Host "  [warn] pandoc-xelatex no soporta CSS (LaTeX usa su own estilo). Se omite." -ForegroundColor Yellow
+            }
             pandoc $md -o $pdf --pdf-engine=xelatex `
                 -V mainfont="Arial" -V geometry:margin=2cm -V lang=es
         }
         "pandoc-wkhtmltopdf" {
-            pandoc $md -o $pdf --pdf-engine=wkhtmltopdf `
+            $cssArg = if ($cssOk) { @("-c", $css) } else { @() }
+            pandoc $md -o $pdf --pdf-engine=wkhtmltopdf @cssArg `
                 -V margin-top=20 -V margin-bottom=20 -V margin-left=20 -V margin-right=20
         }
         "md-to-pdf" {
-            md-to-pdf $md --pdf_options "`"{`"format`":`"A4`",`"margin`":{`"top`":`"20mm`",`"bottom`":`"20mm`",`"left`":`"20mm`",`"right`":`"20mm`"}}`""
+            $cssArg = if ($cssOk) { @("--css", $css) } else { @() }
+            md-to-pdf $md @cssArg
         }
         "markdown-pdf" {
-            markdown-pdf $md
+            # markdown-pdf usa config JSON; CSS requiere archivo temporal.
+            if ($cssOk) {
+                $cfg = Join-Path $env:TEMP "markdown-pdf-$(Get-Random).json"
+                "{`"stylesheet`": `"$($css -replace '\\','\\')`"}" | Set-Content -LiteralPath $cfg -Encoding UTF8
+                markdown-pdf --config $cfg $md
+                Remove-Item -LiteralPath $cfg -EA SilentlyContinue
+            } else {
+                markdown-pdf $md
+            }
         }
     }
 }
@@ -111,6 +135,13 @@ if ($mdFiles.Count -eq 0) {
 Write-Host "Motor: $engine" -ForegroundColor Cyan
 Write-Host "Carpeta: $resolved" -ForegroundColor Cyan
 Write-Host "Archivos .md: $($mdFiles.Count)" -ForegroundColor Cyan
+if ($Css) {
+    if (Test-Path -LiteralPath $Css) {
+        Write-Host "CSS: $Css" -ForegroundColor Cyan
+    } else {
+        Write-Host "CSS: $Css (NO ENCONTRADO — se omitira)" -ForegroundColor Yellow
+    }
+}
 Write-Host ""
 
 $ok = 0; $skipped = 0; $failed = 0
@@ -122,7 +153,7 @@ foreach ($f in $mdFiles) {
         continue
     }
     try {
-        Convert-One -engine $engine -md $f.FullName -pdf $pdf | Out-Null
+        Convert-One -engine $engine -md $f.FullName -pdf $pdf -css $Css | Out-Null
         # md-to-pdf / markdown-pdf dejan el PDF junto al .md; pandoc respeta -o
         if (-not (Test-Path -LiteralPath $pdf)) {
             $altPdf = [System.IO.Path]::Combine($f.DirectoryName, [System.IO.Path]::GetFileNameWithoutExtension($f.Name) + ".pdf")
