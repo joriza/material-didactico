@@ -416,12 +416,21 @@ def main(argv=None):
             return
         if not args.eje:
             raise SystemExit(f"{tarea} requiere --eje N (y opcional --clase-eje M para una clase puntual).")
-        # resolver a2
+
+        # Verificar prerrequisitos a1 y a2 (anuales). Generar automáticamente si faltan.
         a2_path = Path(args.a2) if args.a2 else _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
         if not a2_path or not a2_path.exists():
-            a2_path = MATERIAS / args.materia / "ejemplo-planificacion_de_clases.md"
-        if not a2_path.exists():
-            raise SystemExit("No se encontró a2. Generá a2 primero o usá --a2 <ruta>.")
+            print("→ a2 no encontrado. Generando a1 y a2 automáticamente...")
+            a1_path = Path(args.a1) if args.a1 else _find_latest(OUTPUT, f"{args.materia}-Plan_Anual-*.md")
+            if not a1_path or not a1_path.exists():
+                print("\n=== Generando a1 (Plan Anual) ===")
+                run_a1(args)
+            print("\n=== Generando a2 (Plan de Clases) ===")
+            run_a2(args)
+            a2_path = _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
+            if not a2_path:
+                raise SystemExit("No se pudo generar a2. Verificá el LLM y volvé a intentar.")
+
         rows = parse_a2_table(a2_path)
 
         # Determinar las clases a procesar
