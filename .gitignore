@@ -3,6 +3,7 @@
 node_modules/
 output*/
 *.log
+*.pdf
 .DS_Store
 
 # Secretos — NUNCA commitear la API key real. Usar config-llm.example.json.
