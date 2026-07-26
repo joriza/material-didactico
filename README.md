@@ -139,7 +139,86 @@ a1 → a2 → b1 → b2, b3, b5
 | `nro_eje=0 → no se generan tipo b` | Comportamiento correcto: las clases sin dictado no tienen material |
 | Caracteres raros en consola (Windows) | `main.py` fuerza UTF-8; si persiste, usar terminal moderna |
 
-## 10. Pendiente
+## 10. Conversión a PDF
+
+El script `convert.ps1` (PowerShell 5.1+) convierte todos los `.md` de una carpeta a PDF, con detección automática del motor disponible.
+
+### Requisitos
+
+Instalá uno de estos (recomendado primero):
+
+```powershell
+# Opción A — Chocolatey
+choco install pandoc wkhtmltopdf
+
+# Opción B — descargas directas:
+#   Pandoc:      https://pandoc.org/installing.html
+#   wkhtmltopdf: https://wkhtmltopdf.org/downloads.html
+```
+
+> En Windows, después de instalar, **reiniciá la terminal** para que el PATH se actualice.
+
+### Uso
+
+```powershell
+# Desde la raíz del repo (siempre):
+.\convert.ps1                                        # convierte ./  (carpeta actual)
+.\convert.ps1 -Path output                           # convierte output/
+.\convert.ps1 -Path output\tmp02 -Css .\assets\print.css -Force
+.\convert.ps1 -NoFooter                              # sin numeración al pie
+```
+
+El script autodetecta el motor en este orden de preferencia:
+1. `pandoc + xelatex` (mejor calidad tipográfica; no soporta CSS).
+2. `pandoc + wkhtmltopdf` (decente, soporta CSS y footer con página/total).
+3. `md-to-pdf` (Node + Chromium; soporta CSS, footer requiere config extra).
+4. `markdown-pdf` (Node; soporta CSS).
+
+### Parámetros
+
+| Parámetro | Default | Descripción |
+|---|---|---|
+| `-Path` | `.` (CWD) | Carpeta con los `.md` a convertir. |
+| `-Css` | — | Archivo `.css` de estilos. Solo motores HTML. |
+| `-NoFooter` | — | Desactiva el pie con `nro / total` (solo `pandoc-wkhtmltopdf`). |
+| `-PageSize` | `A4` | Tamaño de página (`A4`, `Letter`, `Legal`, `A3`, etc.). |
+| `-Engine` | autodetecta | `pandoc-xelatex` \| `pandoc-wkhtmltopdf` \| `md-to-pdf` \| `markdown-pdf`. |
+| `-Force` | — | Regenera los PDFs que ya existen (por defecto los salta). |
+
+### Footer con numeración y cabecera con nombre de archivo
+
+Con `pandoc + wkhtmltopdf` (motor recomendado):
+
+- **Cabecera centrada**: nombre del archivo (sin extensión), fuente 8pt, separada por línea.
+- **Pie centrado**: `[page] / [topage]` (ej. `3 / 12`), fuente 8pt, separado por línea.
+
+El pie se puede desactivar con `-NoFooter`. La cabecera siempre va (es la identificación del documento al imprimir).
+
+> wkhtmltopdf no soporta los CSS paged media (`counter(page)`), por eso se usan las variables nativas `[page]` y `[topage]` pasadas vía `--pdf-engine-opt`.
+
+### Márgenes y tipografía
+
+Los márgenes y tamaño de letra se controlan en dos lugares:
+
+- **Script** (`convert.ps1`): márgenes de página (top/bottom 20mm, laterales 10mm) pasados vía `-V margin-*` a pandoc.
+- **CSS** (`assets/print.css` o el que pases con `-Css`): tipografía (`body { font-size: 12pt }`), encabezados, tablas, código.
+
+Editá el CSS para cambiar fuentes/colores/espaciados. Editá el script solo si querés cambiar los márgenes de página.
+
+### CSS base
+
+`assets/print.css` es un punto de partida: A4, Arial 11pt, encabezados azul institucional, tablas con bordes y zebra, código en Consolas, salto de página entre `h1` (excepto el primero). Editalo libremente o pasá tu propio CSS con `-Css <ruta>`.
+
+### Códigos de salida
+
+| Código | Significado |
+|---|---|
+| `0` | Éxito. |
+| `1` | Carpeta inexistente. |
+| `2` | Ningún motor disponible (mensaje instructivo incluido). |
+| `3` | Algunos archivos fallaron. |
+
+## 11. Pendiente
 
 - DAG con cascada (b1 → b2,b3,b5 automático).
 - Lote YAML (`lote/*.yaml`).
