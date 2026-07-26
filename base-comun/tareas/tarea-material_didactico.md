@@ -18,7 +18,9 @@ DIRECTRICES PEDAGÓGICAS:
 
 REGLAS DE FORMATO Y PRESENTACIÓN:
 - Título inicial: la respuesta debe comenzar con un título que referencie de forma breve el contenido general del texto.
-- Encabezado: inmediatamente después del título, colocá EXACTAMENTE estas dos líneas, CADA UNA EN SU PROPIO RENGLÓN (la primera terminada con DOS ESPACIOS para forzar el salto de línea Markdown; sin viñeta, sin variaciones):
+- Encabezado: inmediatamente después del título, colocá EXACTAMENTE estas cuatro líneas, CADA UNA EN SU PROPIO RENGLÓN (cada una terminada con DOS ESPACIOS para forzar el salto de línea Markdown; sin viñeta, sin variaciones):
+  Materia: {{ Variable_Materia }}  
+  Docente: {{ Variable_Docente }}  
   Eje temático: {{ eje_numero }} — {{ eje_descripcion }}  
   Tema: {{ tema }}. {{ actividades }}.
 - Restricciones: no mencionar el número de la clase dentro del cuerpo del texto. No usar LaTeX.

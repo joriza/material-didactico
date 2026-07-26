@@ -3,7 +3,9 @@
 {% block tarea %}
 Actuá como experto en educación de nivel secundario, especializado en técnicas de aprendizaje colaborativo.
 
-El documento debe comenzar con el título, seguido de EXACTAMENTE estas dos líneas, CADA UNA EN SU PROPIO RENGLÓN (la primera terminada con DOS ESPACIOS para forzar el salto de línea Markdown):
+El documento debe comenzar con el título, seguido de EXACTAMENTE estas cuatro líneas, CADA UNA EN SU PROPIO RENGLÓN (cada una terminada con DOS ESPACIOS para forzar el salto de línea Markdown):
+Materia: {{ Variable_Materia }}  
+Docente: {{ Variable_Docente }}  
 Eje temático: {{ eje_numero }} — {{ eje_descripcion }}  
 Tema: {{ tema }}. {{ actividades }}.
 

@@ -12,7 +12,9 @@ Elaborá una Planificación Áulica detallada basada en el siguiente material de
 DATOS DE CONTEXTO:
 - Curso: {{ Variable_Curso }} | Carrera: {{ Variable_Carrera }} | Materia: {{ Variable_Materia }} | Docente: {{ Variable_Docente }} | Establecimiento: {{ Variable_Establecimiento }}
 
-El documento debe comenzar con el título **PLANIFICACIÓN ÁULICA**, seguido de EXACTAMENTE estas dos líneas, CADA UNA EN SU PROPIO RENGLÓN (la primera terminada con DOS ESPACIOS para forzar el salto de línea Markdown):
+El documento debe comenzar con el título **PLANIFICACIÓN ÁULICA**, seguido de EXACTAMENTE estas cuatro líneas, CADA UNA EN SU PROPIO RENGLÓN (cada una terminada con DOS ESPACIOS para forzar el salto de línea Markdown):
+Materia: {{ Variable_Materia }}  
+Docente: {{ Variable_Docente }}  
 Eje temático: {{ eje_numero }} — {{ eje_descripcion }}  
 Tema: {{ tema }}. {{ actividades }}.
 
