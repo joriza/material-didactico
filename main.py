@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """z-material-didactico — generador spec-driven (Python + Jinja2).
 
-Tareas: a1, a2, b1-b5. Naming: <sigla>-<nro_eje><nro_clase_eje>-<Tarea>-<nombre_≤30>.md
+Tareas: a1, a2, b1-b5. Naming: <sigla>-<nro_eje><nro_clase_eje>-<Tarea>-<nombre_≤50>.md
 """
 import argparse
 import json
@@ -183,13 +183,13 @@ def call_llm(client, model, prompt, disable_thinking=False, temperature=0.2, max
 # --------------------------------------------------------------------------
 # Naming
 # --------------------------------------------------------------------------
-def nombre_ref(titulo: str, max_len: int = 30) -> str:
+def nombre_ref(titulo: str, max_len: int = 50) -> str:
     """Titulo → Nombre_Referencial: primera mayúscula + _, sin tildes, ≤ max_len."""
     s = _strip_accents(titulo).lower()
     s = re.sub(r"[^a-z0-9]+", "_", s).strip("_") or "material"
     s = s[0].upper() + s[1:]
     if len(s) > max_len:
-        s = s[:max_len].rsplit("_", 1)[0] or s[:max_len]
+        s = s[:max_len]
     return s
 
 

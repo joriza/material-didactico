@@ -127,7 +127,7 @@ D:  b1 (×varios) → d1 (actividad integradora) → d2 (respuestas) [pendiente]
 - **Constraint duro**: `nro_eje ≤ 9`, `nro_clase_eje ≤ 9`, `Tema_Nro ≤ 9` (un dígito por componente).
 - **Compatibilidad**: archivos existentes con 2 dígitos (mono-tema) siguen siendo válidos y no se migran. Si se regenera una materia con multi-tema, los códigos cambian y se crean archivos nuevos junto a los viejos.
 - `Tarea` en **PascalCase con `_`**: `Material_Didactico`, `Actividad_Aulica`, `Sintesis`, `Respuestas_Actividad`, `Planificacion_Aulica`, `Plan_Anual`, `Plan_De_Clases`.
-- `nombre` = **Primera mayúscula + `_`**, sin tildes, **≤30 caracteres** (truncado a límite de palabra).
+- `nombre` = **Primera mayúscula + `_`**, sin tildes, **≤50 caracteres** (truncado exacto, sin importar límite de palabra).
 
 Ejemplos:
 - `IRI-11-Material_Didactico-Fundamentos_de_redes_de_area.md` (mono-tema, eje 1 clase 1)
@@ -178,7 +178,7 @@ El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del m
 ### ✅ Implementado (v actual)
 - `a1`, `a2`, `b1`, `b2`, `b3`, `b4`, `b5` (plantillas Jinja2 + run en main.py).
 - Parser de `a2` con 9 columnas canónicas (incluida `Tema_Nro`).
-- Naming `<sigla>-<eje><clase_eje>[<tema>]-<Tarea>-<nombre≤30>.md` (numérico, 1 dígito por componente).
+- Naming `<sigla>-<eje><clase_eje>[<tema>]-<Tarea>-<nombre≤50>.md` (numérico, 1 dígito por componente).
 - Búsqueda `--eje`/`--clase-eje`/`--id`/`--tema-idx`. Skip eje 0. Tiempo insumido antes del `write_output`. Sobrescritura con confirmación.
 - Nombre referencial compartido b1→b2-b5 por tema.
 - Encabezado eje+tema en tipo b (con salto de línea Markdown explícito).

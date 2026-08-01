@@ -106,7 +106,7 @@ python main.py --materia IRI --tarea b5 --eje 1 --clase-eje 1 --provider glm-clo
 
 ## 6. Naming de salida
 
-`<sigla>-<nro_eje><nro_clase_eje>-<Tarea_PascalCase>-<nombre_≤30>.md`
+`<sigla>-<nro_eje><nro_clase_eje>-<Tarea_PascalCase>-<nombre_≤50>.md`
 
 Ej.: `IRI-11-Material_Didactico-Fundamentos_de_redes_de_area.md`
 
