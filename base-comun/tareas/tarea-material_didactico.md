@@ -27,6 +27,7 @@ REGLAS DE FORMATO Y PRESENTACIÓN:
   Eje temático: {{ eje_numero }} — {{ eje_descripcion }}  
   Tema: {{ tema }}. {{ actividades }}.
 - Restricciones: no mencionar el número de la clase dentro del cuerpo del texto. No usar LaTeX.
+{# @validar: doc_entero min=20000 #}
 - Longitud: el documento debe alcanzar una extensión de al menos 20.000 caracteres. Lo más extenso y claro posible.
 - Tono: documento finalizado. Prohibidos los cierres dubitativos o propositivos.
 

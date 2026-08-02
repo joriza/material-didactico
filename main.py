@@ -256,6 +256,62 @@ def _existe_output(sigla, nro_eje, nro_clase_eje, tarea_code, tema_nro=None, mul
     return bool(_find_latest(OUTPUT, f"{pref}*.md"))
 
 
+# --------------------------------------------------------------------------
+# Validación de longitud del output (marcador @validar en plantillas)
+# --------------------------------------------------------------------------
+_VALIDAR_RE = re.compile(r"\{#\s*@validar:\s*(\w+)\s+(min|max)\s*=\s*(\d+)\s*#\}")
+
+
+def _leer_reglas_validacion(tarea_code):
+    """Lee el marcador @validar de la plantilla CRUDA (no renderizada).
+    Devuelve lista de tuplas (medida, operador, valor). [] si no hay marcador.
+    El marcador es un comentario Jinja {# @validar: <medida> <min|max>=<n> #}
+    que Jinja NO incluye en el render, así que no contamina el prompt."""
+    tmpl_path = BASE_COMUN / TAREA_TEMPLATE[tarea_code]
+    texto = tmpl_path.read_text(encoding="utf-8")
+    return [(m.group(1), m.group(2), int(m.group(3))) for m in _VALIDAR_RE.finditer(texto)]
+
+
+def _extraer_parrafo_sintesis(doc):
+    """Extrae el primer párrafo sustantivo del documento (la síntesis ultracomprimida de b6).
+    Heurística: partir por líneas en blanco en bloques; descartar títulos (#, ##),
+    líneas de encabezado (Materia:, Docente:, Eje temático:, Tema:) y bloques vacíos.
+    Devolver el primer bloque con contenido real."""
+    _HEAD_ENCABEZADO = ("materia:", "docente:", "eje temático:", "tema:")
+    bloques = [b.strip() for b in re.split(r"\n\s*\n", doc)]
+    for b in bloques:
+        if not b:
+            continue
+        primera_linea = b.splitlines()[0].strip().lower()
+        # saltar títulos markdown y encabezados
+        if primera_linea.startswith("#"):
+            continue
+        if any(primera_linea.startswith(h) for h in _HEAD_ENCABEZADO):
+            continue
+        return b
+    return doc  # fallback: todo el doc
+
+
+def _validar_caracter(doc, tarea_code):
+    """Cuenta caracteres del output y AVISA (no bloquea) si no cumple las reglas
+    @validar declaradas en la plantilla. El umbral vive en la plantilla (single source
+    of truth): cambiar el número ahí actualiza la validación sin tocar código."""
+    reglas = _leer_reglas_validacion(tarea_code)
+    if not reglas:
+        return
+    for medida, op, valor in reglas:
+        if medida == "doc_entero":
+            n = len(doc)
+        elif medida == "parrafo_sintesis":
+            n = len(_extraer_parrafo_sintesis(doc))
+        else:
+            continue
+        if op == "min" and n < valor:
+            print(f"  ⚠ {tarea_code} ({medida}): {n} caracteres — faltan {valor - n} para el mínimo de {valor}.")
+        elif op == "max" and n > valor:
+            print(f"  ⚠ {tarea_code} ({medida}): {n} caracteres — excede el máximo de {valor} por {n - valor}.")
+
+
 def resolver_cascada_b(tarea_code, manifest):
     """Resuelve el subárbol de una tarea tipo b: prerrequisitos + tarea + dependientes.
     Devuelve lista en orden topológico (sólo tipo b; a1/a2 se verifican aparte)."""
@@ -376,6 +432,7 @@ def run_b1(args, tema_row, tema_nro=None, multi=False):
     print(f"\n=== b1 — Material Didáctico (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
+    _validar_caracter(doc, "b1")
     ref = nombre_ref(extraer_titulo(doc))
     fname = nombre_archivo(args.materia, args.eje, args.clase_eje, "b1", ref, tema_nro=tema_nro, multi=multi)
     print(f"\n⏱  {time.time() - t0:.1f}s")
@@ -402,6 +459,7 @@ def run_b2_b5(args, tarea_code, tema_row, tema_nro=None, multi=False):
     print(f"\n=== {tarea_code} — {TAREA_LEGIBLE[tarea_code]} (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
+    _validar_caracter(doc, tarea_code)
     ref = _nombre_ref_de_b1(args.materia, args.eje, args.clase_eje, tema_nro=tema_nro, multi=multi) or nombre_ref(extraer_titulo(doc))
     fname = nombre_archivo(args.materia, args.eje, args.clase_eje, tarea_code, ref, tema_nro=tema_nro, multi=multi)
     print(f"\n⏱  {time.time() - t0:.1f}s")
@@ -445,11 +503,11 @@ def main(argv=None):
     elif tarea == "a2":
         docs = run_a2(args)
     elif tarea in TAREAS_B:
-        if str(args.eje) == "0":
+        if args.eje is not None and str(args.eje) == "0":
             print("→ nro_eje=0 (clase sin dictado): no se generan archivos tipo b.")
             return
-        if not args.eje:
-            raise SystemExit(f"{tarea} requiere --eje N (y opcional --clase-eje M para una clase puntual).")
+        if args.clase_eje is not None and args.eje is None:
+            raise SystemExit("--clase-eje requiere --eje N.")
 
         # Verificar prerrequisitos a1 y a2 (anuales). Generar automáticamente si faltan.
         a2_path = Path(args.a2) if args.a2 else _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
@@ -467,15 +525,15 @@ def main(argv=None):
 
         rows = parse_a2_table(a2_path)
 
-        # Determinar las clases a procesar
+        # Determinar las clases a procesar (jerarquía de especificidad)
         if args.id:
             id_row = next((r for r in rows if str(r.get("id", "")).strip() == str(args.id).strip()), None)
             if not id_row:
                 raise SystemExit(f"No se encontró id={args.id} en {a2_path.name}")
             clases_a_procesar = [(id_row.get("nro_eje", args.eje), id_row.get("nro_clase_eje", "0"))]
-        elif args.clase_eje is not None:
+        elif args.eje is not None and args.clase_eje is not None:
             clases_a_procesar = [(args.eje, args.clase_eje)]
-        else:
+        elif args.eje is not None:
             # TODAS las clases del eje (nro_clase_eje != 0)
             clases_unicas = sorted(set(
                 str(r.get("nro_clase_eje", "0")).strip()
@@ -484,8 +542,19 @@ def main(argv=None):
                 and str(r.get("nro_clase_eje", "0")).strip() != "0"
             ), key=lambda x: int(x) if x.isdigit() else 0)
             clases_a_procesar = [(args.eje, ce) for ce in clases_unicas]
+        else:
+            # TODOS los ejes con dictado (nro_eje != 0, nro_clase_eje != 0)
+            clases_a_procesar = sorted(set(
+                (str(r.get("nro_eje", "")).strip(), str(r.get("nro_clase_eje", "0")).strip())
+                for r in rows
+                if str(r.get("nro_eje", "")).strip() not in ("0", "")
+                and str(r.get("nro_clase_eje", "0")).strip() != "0"
+            ), key=lambda p: (int(p[0]), int(p[1])))
 
-        if len(clases_a_procesar) > 1:
+        if args.eje is None:
+            SOBRESCRIBIR_SIN_PREGUNTAR = True
+            print(f"→ Modo multi-eje: {len(clases_a_procesar)} clase(s) en todos los ejes con dictado. Sobrescribiendo sin preguntar.")
+        elif len(clases_a_procesar) > 1:
             SOBRESCRIBIR_SIN_PREGUNTAR = True
             print(f"→ Modo multi-clase: {len(clases_a_procesar)} clase(s) del eje {args.eje}. Sobrescribiendo sin preguntar.")
 
@@ -514,11 +583,21 @@ def main(argv=None):
                 print(f"\n----- Tema {tema_nro}: {tema_row.get('tema', '')} -----")
                 cascada = resolver_cascada_b(tarea, manifest)
                 print(f"  Cascada: {' → '.join(cascada)}")
+                b1_existe = _existe_output(args.materia, eje_val, clase_eje_val, "b1", tema_nro=tema_nro, multi=multi)
                 for t in cascada:
-                    if _existe_output(args.materia, eje_val, clase_eje_val, t, tema_nro=tema_nro, multi=multi):
-                        suf = f" tema {tema_nro}" if multi else ""
-                        print(f"  → {t} ya existe{suf}, saltando.")
-                        continue
+                    suf = f" (tema {tema_nro})" if multi else ""
+                    if t == "b1":
+                        if b1_existe:
+                            print(f"  → b1 ya existe{suf}, saltando.")
+                            continue
+                    else:
+                        existe_t = _existe_output(args.materia, eje_val, clase_eje_val, t, tema_nro=tema_nro, multi=multi)
+                        if b1_existe:
+                            if existe_t:
+                                print(f"  → {t} ya existe{suf}, saltando.")
+                                continue
+                        elif existe_t:
+                            print(f"  → {t} colgado (sin b1), regenerando.")
                     if t == "b1":
                         docs += run_b1(args, tema_row, tema_nro=tema_nro, multi=multi)
                     else:

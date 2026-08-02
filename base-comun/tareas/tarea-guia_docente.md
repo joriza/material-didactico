@@ -19,6 +19,7 @@ Tema: {{ tema }}. {{ actividades }}.
 A continuación, desarrollar EXACTAMENTE estas cuatro secciones en este orden:
 
 ## 1. Síntesis ultracomprimida
+{# @validar: parrafo_sintesis max=500 #}
 Un único párrafo (no más de 500 caracteres) que responda con densidad: ¿qué tema se cubre?, ¿por qué importa dentro del eje?, ¿qué debe lograr el estudiante al cerrar la clase? Sin listas, sin subtítulos, sin adornos.
 
 ## 2. Ejemplos sintéticos

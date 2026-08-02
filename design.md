@@ -6,7 +6,7 @@ Documento de arquitectura. Fuente única de las decisiones de diseño. Las regla
 
 ## 1. Stack
 
-- **Python ≥ 3.10** + **Jinja2** (plantillas con herencia) + **PyYAML** (lotes y manifiesto) + lib **`openai`** (streaming, OpenAI-compatible).
+- **Python ≥ 3.10** + **Jinja2** (plantillas con herencia) + **PyYAML** (manifiesto) + lib **`openai`** (streaming, OpenAI-compatible).
 - Un solo entrypoint: `main.py`. Sin frameworks.
 - Windows: `main.py` fuerza `sys.stdout.reconfigure(encoding="utf-8")` para soportar acentos y símbolos.
 
@@ -41,7 +41,6 @@ z-material-didactico/
 │   └── IRI/                            ← Redes (datos sueltos)
 │       ├── config-datos.md
 │       └── datos-contenidos_minimos.md
-├── lote/                               ← lotes YAML (pendiente de implementar)
 ├── output/                             ← output único global (naming ordena por materia)
 ├── docs/                               ← referencia (14-Pt-Mat+Activ+sint.md)
 ├── design.md                           ← este documento
@@ -90,18 +89,16 @@ Caso de uso: encuentros de 4h (o más) donde un solo encuentro abarca **varios t
 ```
 A:  a1 (plan anual) → a2 (plan de clases / libro de temas)
 B:  a2 → b1 (material didáctico) → b2 (actividad aúlica)
-                                  → b5 (planificación aúlica)
-                                  → b6 (guía docente: síntesis + ejemplos + aclaraciones + conexiones)
+                                   → b5 (planificación aúlica)
+                                   → b6 (guía docente: síntesis + ejemplos + aclaraciones + conexiones)
         b2 → b4 (respuestas de la actividad)
-C:  b1 (×varios) → c1 (cuestionario) → c2 (respuestas)       [pendiente]
-D:  b1 (×varios) → d1 (actividad integradora) → d2 (respuestas) [pendiente]
 ```
 
 - `a2` es **prerrequisito** de `b1`: contiene la tabla de clases.
 - `b1` es **prerrequisito** de `b2`, `b5`, `b6` (usan `{{ material_didactico }}`).
 - `b2` es **prerrequisito** de `b4` (usa `{{ actividad_aulica }}`).
 - **eje 0 → no genera archivos tipo b** (skip automático: las clases sin dictado no tienen material).
-- **Cascada** (pendiente): pedir una tarea principal → genera ella + sus dependientes.
+- **Cascada B bidireccional** (`resolver_cascada_b`, implementada): pedir una tarea tipo b → genera ella + sus prerrequisitos + sus dependientes automáticamente.
 
 ## 6. Tareas tipo B (detalle)
 
@@ -137,16 +134,22 @@ Ejemplos:
 - `IRI-Plan_Anual-Plan_anual.md` (a1, sin código de clase)
 - `IRI-Plan_De_Clases-Libro_de_temas.md` (a2)
 
-**Fusión** (pendiente): tareas combinadas unidas con `+`: `<...>-Guia_Docente+Respuestas_Actividad-<nombre>.md`.
-
 ### Nombre referencial compartido
 
 El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del material). Los archivos `b2`, `b4`, `b5`, `b6` **reutilizan ese mismo nombre** (buscan el archivo `b1` de la clase+tema y extraen su referencial). Así, todos los "b" de un mismo tema comparten nombre.
 
 ## 8. Búsqueda de clase
 
-- Por defecto: `--eje N --clase-eje M` (busca `nro_eje=N ∧ nro_clase_eje=M` en `a2`).
-- Alternativa: `--id N` (busca la fila con `id=N`; útil para eje 0 donde todas tienen `nro_clase_eje=0`).
+La selección de clase sigue una jerarquía de especificidad (de más a menos):
+
+| Invocación | Alcance |
+|---|---|
+| `--id N` | Una clase por id global |
+| `--eje N --clase-eje M` | Una clase puntual (busca `nro_eje=N ∧ nro_clase_eje=M` en `a2`) |
+| `--eje N` | Todas las clases del eje N (`nro_clase_eje != 0`) |
+| (sin flags) | Todos los ejes con dictado (`nro_eje != 0 ∧ nro_clase_eje != 0`) |
+
+- `--id N` es útil para eje 0, donde todas las filas comparten `nro_clase_eje=0`.
 - `eje 0` con tarea tipo b → skip automático (mensaje "no se generan archivos tipo b").
 
 ## 9. LLM
@@ -188,15 +191,14 @@ El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del m
 - Parser de `a2` con 9 columnas canónicas (incluida `Tema_Nro`).
 - Naming `<sigla>-<eje><clase_eje>[<tema>]-<Tarea>-<nombre≤50>.md` (numérico, 1 dígito por componente).
 - Búsqueda `--eje`/`--clase-eje`/`--id`/`--tema-idx`. Skip eje 0. Tiempo insumido antes del `write_output`. Sobrescritura con confirmación.
-- Nombre referencial compartido b1→b2-b5 por tema.
+- Nombre referencial compartido b1→b2, b4, b5, b6 por tema.
 - Encabezado eje+tema en tipo b (con salto de línea Markdown explícito).
 - **DAG con cascada B bidireccional** (`resolver_cascada_b`): pedir una tarea tipo b → genera prerrequisitos + dependientes automáticamente.
+- **Modo multi-eje** (`--eje` opcional): sin `--eje`, procesa todos los ejes con dictado. Jerarquía de especificidad: `--id` > `--eje`+`--clase-eje` > `--eje` > ninguno.
+- **Cascada B con ancla b1 (R1+R2)**: si b1 existe, se salta y solo genera derivados faltantes; si b1 falta (clase nueva), fuerza regeneración de derivados colgados sin confirmar (idempotente: el b1 es la fuente de verdad por tema).
 - **Multi-tema por encuentro**: encuentros de varias horas generan 1 fila por tema en `a2`, cada una con su propio juego completo (b1+b2+b5+b6). `a2` es la fuente de verdad (editable por el docente).
 - Auto-generación de a1+a2 cuando faltan al pedir una tarea tipo b.
+- **Validación de Carácter**: la app cuenta los caracteres del output y avisa (no bloquea) si no cumple el umbral declarado en cada plantilla. El umbral vive en la plantilla como *single source of truth* mediante un marcador Jinja `{# @validar: <medida> <min|max>=<n> #}` (Jinja lo descarta del render, así que no contamina el prompt). Medidas soportadas: `doc_entero` (cuenta todo el documento, ej. b1 min=20000) y `parrafo_sintesis` (cuenta el primer párrafo sustantivo, ej. b6 max=500). Cambiar el número en la plantilla actualiza la validación sin tocar código.
 
 ### 🔲 Pendiente (próximas iteraciones)
-- **Lote YAML** (`lote/*.yaml`): `interactivo`, `materia`, `tareas`, `clase/clases/eje`, `cascada`, `por_tema`, `fusionar`.
-- **Validación de Carácter** desde la app (por ahora sólo en indicaciones de la plantilla).
-- **Fusión de documentos** (b6+b4 para imprimir, naming con `+`).
-- **Plantillas c1, c2, d1, d2** (evaluación e integradora; el usuario las pasará).
-- **Actualización del README** a la arquitectura Python (en curso).
+- Sin pendientes.

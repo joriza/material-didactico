@@ -51,19 +51,21 @@ materias/<sigla>/           ← datos por materia (sueltos)
   config-datos.md
   datos-contenidos_minimos.md
 output/                     ← generados (único global)
-lote/                       ← lotes YAML (pendiente)
 docs/                       ← referencia
 main.py                     ← app
 ```
 
-## 4. `a2` — Plan de Clases (8 columnas)
+> **Marcador `@validar` en plantillas**: las plantillas pueden declarar validación de longitud con un comentario Jinja `{# @validar: doc_entero min=20000 #}` (medida + `min`/`max`). La app lo lee de la plantilla cruda y **avisa** (no bloquea) si el output no cumple. Jinja descarta el comentario, así que no contamina el prompt. Medidas: `doc_entero` (todo el doc) y `parrafo_sintesis` (primer párrafo sustantivo).
 
-La tabla `a2` tiene **8 columnas permanentes**:
+## 4. `a2` — Plan de Clases (9 columnas)
 
-| id | Eje | nro_eje | nro_clase_eje | Carácter/Objetivo | Tema del Día | Actividades | Fecha |
+La tabla `a2` tiene **9 columnas permanentes** (orden exacto):
+
+| id | Eje | nro_eje | nro_clase_eje | Tema_Nro | Carácter/Objetivo | Tema del Día | Actividades | Fecha |
 
 - `nro_eje=0` → clase **sin dictado** (presentación, cierre, evaluación): `nro_clase_eje=0` siempre.
 - `nro_eje` 1–4 → ejes con dictado; `nro_clase_eje` = secuencial dentro del eje.
+- `Tema_Nro` → número del tema **dentro del encuentro** (`1` mono-tema; `1`, `2`, excepcionalmente `3` multi-tema). Un encuentro con varias filas comparte `id`+`nro_eje`+`nro_clase_eje` y solo varía `Tema_Nro`+`Tema del Día`. Detalle en `design.md §4.3`.
 - `b1` se alimenta de **Tema del Día + Actividades**.
 
 ## 5. Flujo de uso
@@ -84,9 +86,22 @@ python main.py --materia IRI --tarea b2 --eje 1 --clase-eje 1 --provider glm-clo
 python main.py --materia IRI --tarea b4 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b5 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-cloud
+
+# 5) Todos los ejes con dictado (sin --eje → toda la materia)
+python main.py --materia IRI --tarea b1 --provider glm-cloud  # sin --eje → todos los ejes con dictado
 ```
 
 ### Búsqueda de clase
+
+La selección de clase sigue una jerarquía de especificidad (de más a menos):
+
+| Invocación | Alcance |
+|---|---|
+| `--id N` | Una clase por id global |
+| `--eje N --clase-eje M` | Una clase puntual |
+| `--eje N` | Todas las clases del eje N |
+| (sin flags) | Todos los ejes con dictado |
+
 - `--eje N --clase-eje M` (busca por `nro_eje` + `nro_clase_eje`).
 - `--id N` (busca por `id` global; útil para eje 0).
 - **eje 0 → skip automático** (no genera tipo b).
@@ -99,6 +114,7 @@ python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-clo
 | `--eje <n>` | nro_eje |
 | `--clase-eje <n>` | nro_clase_eje |
 | `--id <n>` | id global (alternativa a --eje/--clase-eje) |
+| `--tema-idx <n>` | Tema_Nro puntual dentro del encuentro (multi-tema). Si se omite, procesa todos los temas. |
 | `--a2 <ruta>` | a2 alternativo (si no, busca el más reciente en output/) |
 | `--a1 <ruta>` | a1 alternativo (para a2) |
 | `--provider <key>` | provider de config-llm.json |
@@ -111,7 +127,7 @@ python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-clo
 
 Ej.: `IRI-11-Material_Didactico-Fundamentos_de_redes_de_area.md`
 
-El **nombre referencial** lo genera el LLM en `b1` (del título); `b2`–`b5` lo **reutilizan** (mismo nombre para toda la clase).
+El **nombre referencial** lo genera el LLM en `b1` (del título); `b2`, `b4`, `b5` y `b6` lo **reutilizan** (mismo nombre para toda la clase/tema).
 
 ## 7. Output
 
@@ -128,7 +144,7 @@ a1 → a2 → b1 → b2, b5, b6
 
 - `b2`, `b5`, `b6` requieren que `b1` exista (usan su contenido como insumo).
 - `b4` requiere que `b2` exista.
-- **Cascada automática** (b1 → b2,b5,b6) y **lote YAML**: pendientes de implementar.
+- **Cascada B bidireccional implementada** (`resolver_cascada_b`): pedir una tarea tipo b → genera prerrequisitos + dependientes automáticamente. **Modo multi-eje** implementado: sin `--eje`, procesa todos los ejes con dictado.
 
 ## 9. Troubleshooting
 
@@ -222,7 +238,4 @@ Editá el CSS para cambiar fuentes/colores/espaciados. Editá el script solo si 
 
 ## 11. Pendiente
 
-- DAG con cascada (b1 → b2,b5,b6 automático).
-- Lote YAML (`lote/*.yaml`).
-- Plantillas c1, c2, d1, d2 (evaluación e integradora).
-- Fusión de documentos (b6+b4 para imprimir).
+- (Sin pendientes)
