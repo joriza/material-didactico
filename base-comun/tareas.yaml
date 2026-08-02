@@ -21,7 +21,7 @@ tareas:
     archivo: tarea-material_didactico.md
     descripcion: Material didáctico
     depende_de: [a2]
-    dependientes: [b2, b3, b5]
+    dependientes: [b2, b5, b6]
     itera: por_clase        # default: un material por clase (temas combinados)
 
   b2:
@@ -30,11 +30,6 @@ tareas:
     depende_de: [b1]
     dependientes: [b4]
 
-  b3:
-    archivo: tarea-sintesis_material.md
-    descripcion: Síntesis del material didáctico
-    depende_de: [b1]
-
   b4:
     archivo: tarea-respuestas_actividad_aulica.md
     descripcion: Respuestas de la actividad áulica
@@ -42,7 +37,12 @@ tareas:
 
   b5:
     archivo: tarea-planificacion_aulica.md
-    descripcion: Planificación áulica (guía del docente para la clase)
+    descripcion: Planificación áulica (plan institucional de la clase)
+    depende_de: [b1]
+
+  b6:
+    archivo: tarea-guia_docente.md
+    descripcion: Guía docente (síntesis + ejemplos sintéticos + aclaraciones + conexiones)
     depende_de: [b1]
 
   c1:
@@ -73,8 +73,8 @@ tareas:
 # imprimir juntos). El nombre del archivo resultante une los tipos con "+".
 fusiones:
   impresion_docente:
-    tareas: [b3, b4]
-    descripcion: Síntesis + respuestas de la actividad, para imprimir juntos
+    tareas: [b6, b4]
+    descripcion: Guía docente + respuestas de la actividad, para imprimir juntos
 
 # Vocabulario controlado de la columna "Carácter/Objetivo" de a2.
 # La app valida que el valor esté en esta lista (warn/rechazo según config).

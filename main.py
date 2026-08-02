@@ -24,7 +24,8 @@ OUTPUT = ROOT / "output"
 TAREA_LEGIBLE = {
     "a1": "Plan_Anual", "a2": "Plan_De_Clases",
     "b1": "Material_Didactico", "b2": "Actividad_Aulica",
-    "b3": "Sintesis", "b4": "Respuestas_Actividad", "b5": "Planificacion_Aulica",
+    "b4": "Respuestas_Actividad", "b5": "Planificacion_Aulica",
+    "b6": "Guia_Docente",
     "c1": "Cuestionario_Evaluacion", "c2": "Respuestas_Evaluacion",
     "d1": "Actividad_Integradora", "d2": "Respuestas_Integradora",
 }
@@ -34,12 +35,12 @@ TAREA_TEMPLATE = {
     "a2": "tareas/tarea-plan_de_clases.md",
     "b1": "tareas/tarea-material_didactico.md",
     "b2": "tareas/tarea-actividad_aulica.md",
-    "b3": "tareas/tarea-sintesis_material.md",
     "b4": "tareas/tarea-respuestas_actividad_aulica.md",
     "b5": "tareas/tarea-planificacion_aulica.md",
+    "b6": "tareas/tarea-guia_docente.md",
 }
 
-TAREAS_B = ["b1", "b2", "b3", "b4", "b5"]
+TAREAS_B = ["b1", "b2", "b4", "b5", "b6"]
 
 
 # --------------------------------------------------------------------------
@@ -389,7 +390,7 @@ def run_b2_b5(args, tarea_code, tema_row, tema_nro=None, multi=False):
                  "eje_descripcion": tema_row.get("eje_descripcion", ""),
                  "tema": tema_row.get("tema", ""),
                  "actividades": tema_row.get("actividades", "")}
-    if tarea_code in ("b2", "b3", "b5"):
+    if tarea_code in ("b2", "b5", "b6"):
         variables["material_didactico"] = _insumo(args, "b1", tema_nro=tema_nro, multi=multi)
     if tarea_code == "b4":
         variables["actividad_aulica"] = _insumo(args, "b2", tema_nro=tema_nro, multi=multi)

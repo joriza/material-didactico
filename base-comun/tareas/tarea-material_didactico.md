@@ -30,5 +30,5 @@ REGLAS DE FORMATO Y PRESENTACIÓN:
 - Longitud: el documento debe alcanzar una extensión de al menos 20.000 caracteres. Lo más extenso y claro posible.
 - Tono: documento finalizado. Prohibidos los cierres dubitativos o propositivos.
 
-No incluyas la sección "Síntesis y Conclusión"; esa sección se genera como tarea aparte.
+No incluyas la sección "Síntesis y Conclusión"; la guía docente (b6) cumple ese rol aparte.
 {% endblock %}

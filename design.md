@@ -34,9 +34,9 @@ z-material-didactico/
 │       ├── tarea-plan_de_clases.md     (a2)
 │       ├── tarea-material_didactico.md (b1)
 │       ├── tarea-actividad_aulica.md   (b2)
-│       ├── tarea-sintesis_material.md  (b3)
 │       ├── tarea-respuestas_actividad_aulica.md (b4)
-│       └── tarea-planificacion_aulica.md (b5)
+│       ├── tarea-planificacion_aulica.md (b5)
+│       └── tarea-guia_docente.md       (b6)
 ├── materias/
 │   └── IRI/                            ← Redes (datos sueltos)
 │       ├── config-datos.md
@@ -77,12 +77,12 @@ La tabla `a2` tiene **9 columnas en este orden exacto** (no hay versión alterna
 
 ### 4.3 Multi-tema por encuentro (encuentros largos)
 
-Caso de uso: encuentros de 4h (o más) donde un solo encuentro abarca **varios temas**, cada uno con su propio material didáctico (`b1`), actividad (`b2`), síntesis (`b3`) y planificación (`b5`).
+Caso de uso: encuentros de 4h (o más) donde un solo encuentro abarca **varios temas**, cada uno con su propio material didáctico (`b1`), actividad (`b2`), guía docente (`b6`) y planificación (`b5`).
 
 - **Disparador**: variable `Temas_por_encuentro` en `config-datos.md` (default 1 si falta o `<1`). Es **orientativa** para el LLM al generar `a2` — NO determina el comportamiento del parser.
 - **Fuente de verdad**: la tabla `a2` resultante. El parser agrupa filas por `(nro_eje, nro_clase_eje)` y respeta la cantidad real: si un encuentro tiene 1 fila → mono-tema; si tiene 2 → multi-tema.
 - **Edición manual**: el docente puede editar `a2` fila por fila durante el ciclo (convertir mono en multi agregando una fila con `Tema_Nro=2`, o viceversa) sin tocar `config-datos.md`. La dinámica real de cada clase define cuántos temas tiene, no la carga horaria.
-- **Cascada**: en encuentros multi-tema, la cascada B itera por cada `Tema_Nro` → genera un juego completo (b1+b2+b3+b5) por tema.
+- **Cascada**: en encuentros multi-tema, la cascada B itera por cada `Tema_Nro` → genera un juego completo (b1+b2+b5+b6) por tema.
 - **Cada `b1` es independiente**: cada tema alcanza su propio mínimo de caracteres (no se reparten los caracteres entre temas del mismo encuentro). Más documentos → más contenido total.
 
 ## 5. Tipos de tarea y DAG de dependencias
@@ -90,15 +90,15 @@ Caso de uso: encuentros de 4h (o más) donde un solo encuentro abarca **varios t
 ```
 A:  a1 (plan anual) → a2 (plan de clases / libro de temas)
 B:  a2 → b1 (material didáctico) → b2 (actividad aúlica)
-                                  → b3 (síntesis del material)
                                   → b5 (planificación aúlica)
+                                  → b6 (guía docente: síntesis + ejemplos + aclaraciones + conexiones)
         b2 → b4 (respuestas de la actividad)
 C:  b1 (×varios) → c1 (cuestionario) → c2 (respuestas)       [pendiente]
 D:  b1 (×varios) → d1 (actividad integradora) → d2 (respuestas) [pendiente]
 ```
 
 - `a2` es **prerrequisito** de `b1`: contiene la tabla de clases.
-- `b1` es **prerrequisito** de `b2`, `b3`, `b5` (usan `{{ material_didactico }}`).
+- `b1` es **prerrequisito** de `b2`, `b5`, `b6` (usan `{{ material_didactico }}`).
 - `b2` es **prerrequisito** de `b4` (usa `{{ actividad_aulica }}`).
 - **eje 0 → no genera archivos tipo b** (skip automático: las clases sin dictado no tienen material).
 - **Cascada** (pendiente): pedir una tarea principal → genera ella + sus dependientes.
@@ -109,9 +109,9 @@ D:  b1 (×varios) → d1 (actividad integradora) → d2 (respuestas) [pendiente]
 |---|---|---|---|
 | **b1** | Material didáctico | `Tema del Día` + `Actividades` (de `a2`) | Material de estudio ≥20.000 chars |
 | **b2** | Actividad aúlica | `{{ material_didactico }}` (b1) | Consigna + roles + tareas (4 integrantes, 1h) |
-| **b3** | Síntesis del material | `{{ material_didactico }}` (b1) | Sección "Síntesis y Conclusión" (caracteres, 1 oración, 5 puntos, tiempos) |
 | **b4** | Respuestas actividad | `{{ actividad_aulica }}` (b2) | Sección "Resolución de la actividad" |
-| **b5** | Planificación aúlica | `{{ material_didactico }}` (b1) | Guía del docente (objetivos, contenidos, secuencia, recursos, evaluación) |
+| **b5** | Planificación aúlica | `{{ material_didactico }}` (b1) | Plan institucional (objetivos, contenidos, secuencia, recursos, evaluación) |
+| **b6** | Guía docente | `{{ material_didactico }}` (b1) | Cheatsheet compacta (síntesis ultracomprimida + 3-5 ejemplos + aclaraciones críticas + conexiones) |
 
 - **Encabezado obligatorio** en todos los tipo b: `Eje (nº + descripción) + Tema del día` al inicio del documento.
 - **`b1`** se alimenta de **Tema del día + Actividades** (de `a2`); NO usa Carácter como insumo principal.
@@ -126,7 +126,7 @@ D:  b1 (×varios) → d1 (actividad integradora) → d2 (respuestas) [pendiente]
 - **Multi-tema** (>1 filas en `a2`): `<sigla>-<eje><clase_eje><tema>-...` → 3 dígitos.
 - **Constraint duro**: `nro_eje ≤ 9`, `nro_clase_eje ≤ 9`, `Tema_Nro ≤ 9` (un dígito por componente).
 - **Compatibilidad**: archivos existentes con 2 dígitos (mono-tema) siguen siendo válidos y no se migran. Si se regenera una materia con multi-tema, los códigos cambian y se crean archivos nuevos junto a los viejos.
-- `Tarea` en **PascalCase con `_`**: `Material_Didactico`, `Actividad_Aulica`, `Sintesis`, `Respuestas_Actividad`, `Planificacion_Aulica`, `Plan_Anual`, `Plan_De_Clases`.
+- `Tarea` en **PascalCase con `_`**: `Material_Didactico`, `Actividad_Aulica`, `Respuestas_Actividad`, `Planificacion_Aulica`, `Guia_Docente`, `Plan_Anual`, `Plan_De_Clases`.
 - `nombre` = **Primera mayúscula + `_`**, sin tildes, **≤50 caracteres** (truncado exacto, sin importar límite de palabra).
 
 Ejemplos:
@@ -137,11 +137,11 @@ Ejemplos:
 - `IRI-Plan_Anual-Plan_anual.md` (a1, sin código de clase)
 - `IRI-Plan_De_Clases-Libro_de_temas.md` (a2)
 
-**Fusión** (pendiente): tareas combinadas unidas con `+`: `<...>-Sintesis+Respuestas_Actividad-<nombre>.md`.
+**Fusión** (pendiente): tareas combinadas unidas con `+`: `<...>-Guia_Docente+Respuestas_Actividad-<nombre>.md`.
 
 ### Nombre referencial compartido
 
-El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del material). Los archivos `b2`, `b3`, `b4`, `b5` **reutilizan ese mismo nombre** (buscan el archivo `b1` de la clase+tema y extraen su referencial). Así, todos los "b" de un mismo tema comparten nombre.
+El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del material). Los archivos `b2`, `b4`, `b5`, `b6` **reutilizan ese mismo nombre** (buscan el archivo `b1` de la clase+tema y extraen su referencial). Así, todos los "b" de un mismo tema comparten nombre.
 
 ## 8. Búsqueda de clase
 
@@ -184,19 +184,19 @@ El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del m
 ## 12. Estado de implementación
 
 ### ✅ Implementado (v actual)
-- `a1`, `a2`, `b1`, `b2`, `b3`, `b4`, `b5` (plantillas Jinja2 + run en main.py).
+- `a1`, `a2`, `b1`, `b2`, `b4`, `b5`, `b6` (plantillas Jinja2 + run en main.py).
 - Parser de `a2` con 9 columnas canónicas (incluida `Tema_Nro`).
 - Naming `<sigla>-<eje><clase_eje>[<tema>]-<Tarea>-<nombre≤50>.md` (numérico, 1 dígito por componente).
 - Búsqueda `--eje`/`--clase-eje`/`--id`/`--tema-idx`. Skip eje 0. Tiempo insumido antes del `write_output`. Sobrescritura con confirmación.
 - Nombre referencial compartido b1→b2-b5 por tema.
 - Encabezado eje+tema en tipo b (con salto de línea Markdown explícito).
 - **DAG con cascada B bidireccional** (`resolver_cascada_b`): pedir una tarea tipo b → genera prerrequisitos + dependientes automáticamente.
-- **Multi-tema por encuentro**: encuentros de varias horas generan 1 fila por tema en `a2`, cada una con su propio juego completo (b1+b2+b3+b5). `a2` es la fuente de verdad (editable por el docente).
+- **Multi-tema por encuentro**: encuentros de varias horas generan 1 fila por tema en `a2`, cada una con su propio juego completo (b1+b2+b5+b6). `a2` es la fuente de verdad (editable por el docente).
 - Auto-generación de a1+a2 cuando faltan al pedir una tarea tipo b.
 
 ### 🔲 Pendiente (próximas iteraciones)
 - **Lote YAML** (`lote/*.yaml`): `interactivo`, `materia`, `tareas`, `clase/clases/eje`, `cascada`, `por_tema`, `fusionar`.
 - **Validación de Carácter** desde la app (por ahora sólo en indicaciones de la plantilla).
-- **Fusión de documentos** (b3+b4 para imprimir, naming con `+`).
+- **Fusión de documentos** (b6+b4 para imprimir, naming con `+`).
 - **Plantillas c1, c2, d1, d2** (evaluación e integradora; el usuario las pasará).
 - **Actualización del README** a la arquitectura Python (en curso).

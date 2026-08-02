@@ -81,9 +81,9 @@ python main.py --materia LPR --tarea b1 --eje 5 --clase-eje 1 --provider glm-clo
 
 # 4) Derivados (usan el b1 ya generado; mismo nombre referencial)
 python main.py --materia IRI --tarea b2 --eje 1 --clase-eje 1 --provider glm-cloud
-python main.py --materia IRI --tarea b3 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b4 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b5 --eje 1 --clase-eje 1 --provider glm-cloud
+python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-cloud
 ```
 
 ### Búsqueda de clase
@@ -95,7 +95,7 @@ python main.py --materia IRI --tarea b5 --eje 1 --clase-eje 1 --provider glm-clo
 | Flag | Descripción |
 |---|---|
 | `--materia <sigla>` | Obligatorio (ej. IRI; se normaliza a MAYÚSCULAS en el naming) |
-| `--tarea <código>` | a1, a2, b1, b2, b3, b4, b5 |
+| `--tarea <código>` | a1, a2, b1, b2, b4, b5, b6 |
 | `--eje <n>` | nro_eje |
 | `--clase-eje <n>` | nro_clase_eje |
 | `--id <n>` | id global (alternativa a --eje/--clase-eje) |
@@ -122,13 +122,13 @@ El **nombre referencial** lo genera el LLM en `b1` (del título); `b2`–`b5` lo
 ## 8. Dependencias entre tareas (DAG)
 
 ```
-a1 → a2 → b1 → b2, b3, b5
+a1 → a2 → b1 → b2, b5, b6
               b2 → b4
 ```
 
-- `b2`, `b3`, `b5` requieren que `b1` exista (usan su contenido como insumo).
+- `b2`, `b5`, `b6` requieren que `b1` exista (usan su contenido como insumo).
 - `b4` requiere que `b2` exista.
-- **Cascada automática** (b1 → b2,b3,b5) y **lote YAML**: pendientes de implementar.
+- **Cascada automática** (b1 → b2,b5,b6) y **lote YAML**: pendientes de implementar.
 
 ## 9. Troubleshooting
 
@@ -222,7 +222,7 @@ Editá el CSS para cambiar fuentes/colores/espaciados. Editá el script solo si 
 
 ## 11. Pendiente
 
-- DAG con cascada (b1 → b2,b3,b5 automático).
+- DAG con cascada (b1 → b2,b5,b6 automático).
 - Lote YAML (`lote/*.yaml`).
 - Plantillas c1, c2, d1, d2 (evaluación e integradora).
-- Fusión de documentos (b3+b4 para imprimir).
+- Fusión de documentos (b6+b4 para imprimir).
