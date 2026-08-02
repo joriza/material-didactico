@@ -424,6 +424,7 @@ def main(argv=None):
     ap.add_argument("--modelo", help="id de modelo (sobreescribe)")
     ap.add_argument("--dry-run", action="store_true", help="arma y muestra el prompt sin llamar al LLM")
     args = ap.parse_args(argv)
+    args.materia = args.materia.upper()  # naming siempre en mayúsculas
 
     OUTPUT.mkdir(exist_ok=True)
     tarea = args.tarea

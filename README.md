@@ -77,6 +77,7 @@ python main.py --materia IRI --tarea a2 --provider glm-cloud
 
 # 3) Material didáctico (b1) de una clase
 python main.py --materia IRI --tarea b1 --eje 1 --clase-eje 1 --provider glm-cloud
+python main.py --materia LPR --tarea b1 --eje 5 --clase-eje 1 --provider glm-cloud
 
 # 4) Derivados (usan el b1 ya generado; mismo nombre referencial)
 python main.py --materia IRI --tarea b2 --eje 1 --clase-eje 1 --provider glm-cloud
@@ -93,7 +94,7 @@ python main.py --materia IRI --tarea b5 --eje 1 --clase-eje 1 --provider glm-clo
 ### Flags
 | Flag | Descripción |
 |---|---|
-| `--materia <sigla>` | Obligatorio (ej. IRI) |
+| `--materia <sigla>` | Obligatorio (ej. IRI; se normaliza a MAYÚSCULAS en el naming) |
 | `--tarea <código>` | a1, a2, b1, b2, b3, b4, b5 |
 | `--eje <n>` | nro_eje |
 | `--clase-eje <n>` | nro_clase_eje |

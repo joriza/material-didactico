@@ -121,7 +121,7 @@ D:  b1 (×varios) → d1 (actividad integradora) → d2 (respuestas) [pendiente]
 
 **Formato:** `<sigla>-<nro_eje><nro_clase_eje>[<Tema_Nro>]-<Tarea_PascalCase>-<nombre_solo_primera_mayúscula>.md`
 
-- `sigla` (letras, ej. IRI) + `nro_eje` (1 dígito) + `nro_clase_eje` (1 dígito) + **opcional** `Tema_Nro` (1 dígito) cuando el encuentro tiene múltiples temas.
+- `sigla` (letras, ej. IRI; **siempre MAYÚSCULAS en el naming**, sin importar el case que el usuario pase en `--materia`) + `nro_eje` (1 dígito) + `nro_clase_eje` (1 dígito) + **opcional** `Tema_Nro` (1 dígito) cuando el encuentro tiene múltiples temas.
 - **Mono-tema** (1 fila en `a2`): `<sigla>-<eje><clase_eje>-...` → 2 dígitos.
 - **Multi-tema** (>1 filas en `a2`): `<sigla>-<eje><clase_eje><tema>-...` → 3 dígitos.
 - **Constraint duro**: `nro_eje ≤ 9`, `nro_clase_eje ≤ 9`, `Tema_Nro ≤ 9` (un dígito por componente).
