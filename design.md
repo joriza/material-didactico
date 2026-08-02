@@ -166,6 +166,14 @@ El `Nombre_Referencial` lo **genera el LLM en `b1`** (a partir del título del m
 - Outputs anteriores (encadenamiento): `{{ planificacion_anual }}` (a1), `{{ material_didactico }}` (b1), `{{ actividad_aulica }}` (b2).
 - Herencia: las tareas hacen `{% extends "specificacion-principal.md" %}` y rellenan `{% block tarea %}`.
 
+### Variables de comportamiento ( switches en `config-datos.md`, evaluadas con `{% if %}`)
+
+| Variable | Valores | Default si se omite | Efecto |
+|---|---|---|---|
+| `Temas_por_encuentro` | entero (1, 2, …) | `1` | Techo de temas por encuentro en `a2`. El LLM puede generar menos, nunca más. |
+| `Incluir_Ejemplos_Codigo` | `true` / sin definir | sin definir (off) | Prende ejemplos mínimos de código en `b1`. Para materias con programación/scripting. |
+| `Nivel_Audiencia` | `no_tecnico` / `tecnico` (o sin definir) | `tecnico` | Ajusta tono, profundidad y lenguaje en la capa común (`specificacion-principal.md`). Afecta a TODAS las tareas (a1, a2, b1-b5). |
+
 ## 11. Output y sobrescritura
 
 - Salida siempre en `output/` (único global).
