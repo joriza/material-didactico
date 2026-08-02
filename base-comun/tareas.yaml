@@ -15,7 +15,7 @@ tareas:
     descripcion: Planificación de clases (libro de temas)
     depende_de: [a1]
     dependientes: [b1]
-    # a2 es PRERREQUISITO de b1/c1/d1: contiene la tabla de clases.
+    # a2 es PRERREQUISITO de b1: contiene la tabla de clases.
 
   b1:
     archivo: tarea-material_didactico.md
@@ -25,7 +25,7 @@ tareas:
     itera: por_clase        # default: un material por clase (temas combinados)
 
   b2:
-    archivo: null            # plantilla pendiente
+    archivo: tarea-actividad_aulica.md
     descripcion: Actividad áulica
     depende_de: [b1]
     dependientes: [b4]
@@ -44,37 +44,6 @@ tareas:
     archivo: tarea-guia_docente.md
     descripcion: Guía docente (síntesis + ejemplos sintéticos + aclaraciones + conexiones)
     depende_de: [b1]
-
-  c1:
-    archivo: null
-    descripcion: Cuestionario de evaluación
-    depende_de: [b1]
-    dependientes: [c2]
-    multi: true              # consume varios b1 (indicados por naming)
-
-  c2:
-    archivo: null
-    descripcion: Respuestas de la evaluación
-    depende_de: [c1]
-
-  d1:
-    archivo: null
-    descripcion: Actividad integradora
-    depende_de: [b1]
-    dependientes: [d2]
-    multi: true
-
-  d2:
-    archivo: null
-    descripcion: Respuestas de la actividad integradora
-    depende_de: [d1]
-
-# Grupos de fusión: combinan varias tareas en un único documento (ej. para
-# imprimir juntos). El nombre del archivo resultante une los tipos con "+".
-fusiones:
-  impresion_docente:
-    tareas: [b6, b4]
-    descripcion: Guía docente + respuestas de la actividad, para imprimir juntos
 
 # Vocabulario controlado de la columna "Carácter/Objetivo" de a2.
 # La app valida que el valor esté en esta lista (warn/rechazo según config).

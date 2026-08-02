@@ -42,7 +42,7 @@ z-material-didactico/
 │       ├── config-datos.md
 │       └── datos-contenidos_minimos.md
 ├── output/                             ← output único global (naming ordena por materia)
-├── docs/                               ← referencia (14-Pt-Mat+Activ+sint.md)
+├── docs/                               ← referencia
 ├── design.md                           ← este documento
 ├── main.py                             ← app
 └── requirements.txt                    ← openai, jinja2, pyyaml
@@ -180,7 +180,7 @@ La selección de clase sigue una jerarquía de especificidad (de más a menos):
 ## 11. Output y sobrescritura
 
 - Salida siempre en `output/` (único global).
-- Si el archivo existe → la app **pregunta** "¿Sobrescribir? [S/n]", default **Sí**. En modo multi-clase o multi-tema se sobrescribe sin preguntar.
+- Si el archivo existe → la app **pregunta** "¿Sobrescribir? [S/n]", default **Sí** (aplica a `a1`/`a2` y a tareas tipo b pedidas en forma puntual). En tareas tipo b en **cascada** rige R1+R2 (ver §12): si `b1` existe se salta y solo se generan los derivados faltantes; si `b1` falta se fuerzan los derivados colgados — todo sin preguntar.
 - Al final de cada generación se imprime el **tiempo insumido** (`⏱  Xs`) **justo antes** de escribir el archivo, para que el usuario lo vea incluso si la escritura falla o se cancela.
 - **Encabezado Eje/Tema**: todos los tipo b llevan un encabezado obligatorio con `Eje temático:` y `Tema:` en **renglones distintos** (salto de línea Markdown con 2 espacios al final de la primera línea), para que el `.md` exportado los renderice correctamente.
 
