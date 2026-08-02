@@ -67,6 +67,15 @@ def _find_latest(directory: Path, pattern: str):
     return matches[-1] if matches else None
 
 
+def _fmt_duracion(s: float) -> str:
+    """Segundos -> '12.3s' (< 1 min) o 'Xm YYs' (>= 1 min)."""
+    if s < 59.95:  # umbral: a partir de 59.95, .1f redondearia a "60.0s"
+        return f"{s:.1f}s"
+    total = round(s)
+    m, rest = divmod(total, 60)
+    return f"{m}m {rest:02d}s"
+
+
 # --------------------------------------------------------------------------
 # a2 — tabla de clases (9 columnas canónicas)
 # --------------------------------------------------------------------------
@@ -524,4 +533,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    _t0_total = time.time()
+    try:
+        main()
+    finally:
+        print(f"\n⏱  Total: {_fmt_duracion(time.time() - _t0_total)}")
