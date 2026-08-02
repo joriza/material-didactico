@@ -429,7 +429,7 @@ def run_b1(args, tema_row, tema_nro=None, multi=False):
         print("\n--- PROMPT (dry-run, b1) ---\n" + prompt)
         return []
     tema_suf = f", tema {tema_nro}" if multi else ""
-    print(f"\n=== b1 — Material Didáctico (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
+    print(f"\n=== [{args.materia}] b1 — Material Didáctico (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
     _validar_caracter(doc, "b1")
@@ -456,7 +456,7 @@ def run_b2_b5(args, tarea_code, tema_row, tema_nro=None, multi=False):
         print(f"\n--- PROMPT (dry-run, {tarea_code}) ---\n" + prompt)
         return []
     tema_suf = f", tema {tema_nro}" if multi else ""
-    print(f"\n=== {tarea_code} — {TAREA_LEGIBLE[tarea_code]} (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
+    print(f"\n=== [{args.materia}] {tarea_code} — {TAREA_LEGIBLE[tarea_code]} (eje {args.eje}, clase-eje {args.clase_eje}{tema_suf}) ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
     _validar_caracter(doc, tarea_code)
@@ -553,10 +553,10 @@ def main(argv=None):
 
         if args.eje is None:
             SOBRESCRIBIR_SIN_PREGUNTAR = True
-            print(f"→ Modo multi-eje: {len(clases_a_procesar)} clase(s) en todos los ejes con dictado. Sobrescribiendo sin preguntar.")
+            print(f"→ [{args.materia}] Modo multi-eje: {len(clases_a_procesar)} clase(s) en todos los ejes con dictado. Sobrescribiendo sin preguntar.")
         elif len(clases_a_procesar) > 1:
             SOBRESCRIBIR_SIN_PREGUNTAR = True
-            print(f"→ Modo multi-clase: {len(clases_a_procesar)} clase(s) del eje {args.eje}. Sobrescribiendo sin preguntar.")
+            print(f"→ [{args.materia}] Modo multi-clase: {len(clases_a_procesar)} clase(s) del eje {args.eje}. Sobrescribiendo sin preguntar.")
 
         manifest = load_yaml(BASE_COMUN / "tareas.yaml")
 
@@ -574,7 +574,7 @@ def main(argv=None):
                 key=lambda r: int(r.get("tema_nro", "1")) if str(r.get("tema_nro", "1")).isdigit() else 1
             )
             encuentros_desc = "multi-tema" if multi else "mono-tema"
-            print(f"\n========== Clase eje={eje_val} clase-eje={clase_eje_val} ({encuentros_desc}, "
+            print(f"\n========== [{args.materia}] Clase eje={eje_val} clase-eje={clase_eje_val} ({encuentros_desc}, "
                   f"{len(clase_rows)} tema(s)) ==========")
             for tema_row in clase_rows:
                 tema_nro = tema_row.get("tema_nro", "1")
