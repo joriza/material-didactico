@@ -15,4 +15,5 @@ A continuación se detallan los parámetros obligatorios para la generación del
 - **Cantidad_ejes**: 4
 - **Cantidad_clases**: 36
 - **Temas_por_encuentro**: 2
+- **Incluir_Ejemplos_Codigo**: true
 

@@ -15,6 +15,9 @@ DIRECTRICES PEDAGÓGICAS:
 2. Profundidad: explicá los "por qué" y los "cómo" con gran detalle, utilizando lenguaje técnico pero accesible para un estudiante de escuela para adultos.
 3. Ejemplificación: incorporá ejemplos prácticos para facilitar la comprensión.
 4. Delimitación del alcance: cuidá de no profundizar en temáticas que serán el eje central de clases posteriores.
+{% if Incluir_Ejemplos_Codigo == "true" %}
+5. Ejemplos de código: cuando el tema involucre programación o sintaxis de consulta (SQL, lenguajes de scripting, etc.), incorporá **ejemplos mínimos de código ejecutable** en el lenguaje que corresponda según el contenido del tema. Inferí el lenguaje a partir del Tema del Día y los contenidos mínimos (Python, C#, SQL, JavaScript, Bash, etc.). Los ejemplos deben ser cortos, focalizados en el concepto que se explica y comentados línea por línea.
+{% endif %}
 
 REGLAS DE FORMATO Y PRESENTACIÓN:
 - Título inicial: la respuesta debe comenzar con un título que referencie de forma breve el contenido general del texto.
