@@ -14,6 +14,7 @@ A continuación se detallan los parámetros obligatorios para la generación del
 - **Char_campos**: 40
 - **Cantidad_ejes**: 4
 - **Cantidad_clases**: 36
-- **Temas_por_encuentro**: 2
+- **Temas_por_encuentro**: 1
 - **Incluir_Ejemplos_Codigo**: true
-
+- **Notas_Pedagogicas**: Priorizar fundamentos sobre profundidad: los estudiantes inician programación orientada a objetos, por lo que cada concepto nuevo requiere andamiaje (ejemplos incrementales de lo simple a lo complejo, definición de términos técnicos al introducirlos, sin saltos conceptuales). Asumir dominio de Python sintáctico básico, pero no de POO ni estructuras avanzadas.
+- **Nivel_Audiencia**: no_tecnico

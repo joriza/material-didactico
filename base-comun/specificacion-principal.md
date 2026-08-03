@@ -19,6 +19,11 @@ ESTRATEGIA PEDAGÓGICA (aplicar de forma implícita; está PROHIBIDO nombrar o r
 - Desarrollá con profundidad las razones causa-efecto y los procedimientos operativos.
 {% endif %}
 
+{% if Notas_Pedagogicas %}
+NOTAS PEDAGÓGICAS DE LA MATERIA (aplicar a este documento):
+{{ Notas_Pedagogicas }}
+{% endif %}
+
 REGLAS DE ESCRITURA:
 {% if Nivel_Audiencia == "no_tecnico" %}
 - Usá lenguaje claro y accesible, evitando jerga técnica. Cuando un término técnico sea imprescindible, definilo al introducirlo.
