@@ -28,6 +28,15 @@ REGLAS DE PRESENTACIÓN:
   8. **Actividades**: detalle de las acciones pedagógicas a desarrollar.
   9. **Fecha**: (no estimar; la colocará el docente manualmente).
 
+REGLAS DE ESTRUCTURA POR CUATRIMESTRE (constante, no negociable):
+- 2 cuatrimestres × 18 clases = 36 clases anuales.
+- Cada cuatrimestre sigue este orden cronológico estricto:
+  1. **Intensificación inicial (2 clases)** con `nro_eje=0`, `nro_clase_eje=0`. `Carácter`: *Presentación* en la primera del 1° cuatrimestre (incluye diagnóstico), *Intensificación* en las demás.
+  2. **Eje 1 del cuatrimestre**: 5 clases de contenido (`nro_eje=1` o `nro_eje=3` según cuatrimestre) con `Carácter` según el tema (*Teórica*, *Práctica*, *Teórico-Práctica*, etc.) + 1 clase final con `Carácter`: *Evaluativa*.
+  3. **Eje 2 del cuatrimestre**: 5 clases de contenido (`nro_eje=2` o `nro_eje=4`) + 1 clase con `Carácter`: *Repaso* + 1 clase final con `Carácter`: *Evaluativa*.
+  4. **Intensificación final (2 clases)** con `nro_eje=0`, `Carácter`: *Intensificación*.
+  5. **Cierre + volcado de notas (1 clase)** con `nro_eje=0`, `Carácter`: *Cierre* (o *Evaluativa (en proceso o final)*). En el 2° cuatrimestre es cierre anual + volcado a libreta (última clase del año regular).
+
 REGLAS DE MULTI-TEMA POR ENCUENTRO:
 - `{{ Temas_por_encuentro | default(1) }}` es un valor ORIENTATIVO por defecto. La decisión final sobre cuántos temas tiene cada encuentro la tomás vos según la dinámica prevista de la clase: un encuentro puede tener 1 tema y otro del mismo eje tener 2, ambos son válidos.
 - Para cada `(nro_eje, nro_clase_eje)` con dictado, emitís UNA fila por tema. Todas las filas del mismo encuentro comparten `id`, `nro_eje` y `nro_clase_eje`. Solo varían `Tema_Nro` (1, 2, …) y `Tema del Día` (uno distinto por fila). El resto de los campos (`Carácter`, `Actividades`, `Fecha`) pueden repetir o variar según corresponda pedagógicamente.

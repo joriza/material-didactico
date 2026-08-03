@@ -15,25 +15,38 @@ Comenzar mostrando datos identificatorios.
 
 #### 1. REGLAS DE ORGANIZACIÓN TEMPORAL
 
-La estructura de la tabla de planificación debe seguir este orden cronológico.
+La estructura de la tabla de planificación debe seguir este orden cronológico estricto.
 
 REGLAS DE CALENDARIO (para todo el ciclo lectivo):
 {{ Reglas_ciclo_lectivo }}
 
-- Consta de 2 cuatrimestres de 18 clases cada uno.
+- Consta de 2 cuatrimestres de 18 clases cada uno (36 clases anuales totales).
 
-REGLAS POR CUATRIMESTRE:
+REGLAS POR CUATRIMESTRE (estructura fija):
 {{ Reglas_cuatrimestres }}
 
-- Presentación, diagnóstico y acuerdo pedagógico: 1 clase. Solo para el primer cuatrimestre. Solo si es escuela técnica, agregar en la misma clase Seguridad y elementos de protección personal referidos al entorno en actividades prácticas de la materia.
-- Intensificación: 2 clases. Ubicadas al inicio de cada cuatrimestre para profundización de saberes.
-- Desarrollo del Eje temático: 4 clases. No colocar la palabra "eje" en el nombre del eje temático.
-- Consolidación, repaso y consulta de dudas técnicas + Evaluación: 2 clases. Si en `{{ Tipo_de_Clase }}` se indica 'Taller', se unificarán en una sola fila con tiempo 2; en caso contrario, se desglosarán en dos filas con tiempo 1 cada una.
-- Desarrollo del Eje temático: 4 clases. No colocar la palabra "eje" en el nombre del eje temático.
-- Consolidación, repaso y consulta de dudas técnicas + Evaluación: 2 clases. (Misma regla anterior según `{{ Tipo_de_Clase }}`.)
-- Cierre del cuatrimestre: 1 clase.
-- Cierre de la materia: 1 clase. Solo para el segundo cuatrimestre.
-- Intensificación: 2 clases. Ubicadas al final de cada cuatrimestre para profundización de saberes.
+Cada cuatrimestre, en este orden cronológico estricto:
+
+1. **Intensificación inicial (2 clases)** para profundización de saberes.
+   - En el **1° cuatrimestre**: la PRIMERA intensificación incluye además Presentación, Diagnóstico y Acuerdo Pedagógico (si es escuela técnica, sumar Seguridad y elementos de protección personal referidos al entorno en actividades prácticas). Trabaja saberes previos del año anterior.
+   - En el **2° cuatrimestre**: ambas intensificaciones iniciales trabajan saberes previos (los dictados en el 1° cuatrimestre).
+
+2. **Eje temático 1 del cuatrimestre (6 clases)**: 5 clases de desarrollo de contenido + 1 clase de Evaluación escrita al final. No colocar la palabra "eje" en el nombre del eje temático.
+
+3. **Eje temático 2 del cuatrimestre (7 clases)**: 5 clases de desarrollo de contenido + 1 clase de Repaso y Consultas + 1 clase de Evaluación escrita al final. No colocar la palabra "eje" en el nombre del eje temático.
+
+4. **Intensificación final (2 clases)** para trabajar saberes no alcanzados durante el cuatrimestre.
+
+5. **Cierre + volcado de notas (1 clase)**.
+   - En el **1° cuatrimestre**: cierre del cuatrimestre + volcado de notas parciales.
+   - En el **2° cuatrimestre**: cierre anual + volcado a libreta de calificaciones. Es la **última clase del año regular** para los alumnos que no requieren intensificación. Las intensificaciones posteriores (diciembre/marzo) son para los que deben recuperar saberes no acreditados.
+
+DISTRIBUCIÓN TOTAL ANUAL (constante, no negociable):
+- 8 intensificaciones (4 iniciales + 4 finales).
+- 4 ejes temáticos × (5 contenido + 1 evaluación escrita) = 24 clases.
+- 2 clases de Repaso y Consultas (en los segundos ejes de cada cuatrimestre).
+- 2 cierres (uno por cuatrimestre).
+- **Total: 8 + 24 + 2 + 2 = 36 clases.**
 
 #### 2. METODOLOGÍA Y FORMATO DE TABLA
 
