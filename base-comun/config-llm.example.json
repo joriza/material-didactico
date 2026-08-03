@@ -21,6 +21,16 @@
       "models": {
         "glm-4.7": { "name": "glm-4.7" }
       }
+    },
+    "gemini": {
+      "name": "gemini",
+      "options": {
+        "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "apiKey": "PEGA_TU_GEMINI_API_KEY_AQUI"
+      },
+      "models": {
+        "gemini-2.5-flash": { "name": "gemini-2.5-flash" }
+      }
     }
   }
 }
