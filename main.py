@@ -418,12 +418,13 @@ def _insumo(args, tarea_dep, tema_nro=None, multi=False):
 
 
 def run_b1(args, tema_row, tema_nro=None, multi=False):
-    _, vars_cfg, _, env, (client, model, dt) = _cargar_comun(args)
+    _, vars_cfg, contenidos, env, (client, model, dt) = _cargar_comun(args)
     variables = {**vars_cfg,
                  "eje_numero": tema_row.get("nro_eje", args.eje),
                  "eje_descripcion": tema_row.get("eje_descripcion", ""),
                  "tema": tema_row.get("tema", ""),
-                 "actividades": tema_row.get("actividades", "")}
+                 "actividades": tema_row.get("actividades", ""),
+                 "contenidos_minimos": contenidos}
     prompt = render(env, TAREA_TEMPLATE["b1"], variables)
     if args.dry_run:
         print("\n--- PROMPT (dry-run, b1) ---\n" + prompt)

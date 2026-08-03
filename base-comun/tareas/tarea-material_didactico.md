@@ -8,6 +8,9 @@ DATOS DE LA CLASE:
 - Tema del día: {{ tema }}
 - Actividades planificadas: {{ actividades }}
 
+CONTEXTO DE LA MATERIA (contenidos mínimos — para desambiguar el tema del día y delimitar el alcance; NO desarrollarlos todos, desarrollá SOLO el tema del día):
+{{ contenidos_minimos }}
+
 Diseñá material didáctico completo y profundo sobre el tema del día.
 
 DIRECTRICES PEDAGÓGICAS:
