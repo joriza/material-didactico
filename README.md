@@ -55,6 +55,16 @@ docs/                       ← referencia
 main.py                     ← app
 ```
 
+### 3.1 Origen de `datos-contenidos_minimos.md`
+
+El archivo `materias/<sigla>/datos-contenidos_minimos.md` es la **fuente de verdad del alcance de cada materia**: lo consume `a1` y `a2` como insumo a organizar, y `b1` como contexto de desambiguación. El origen del contenido varía por materia:
+
+| Materia(s) | Origen | Notas |
+|---|---|---|
+| EIN, IRI, ITI-PDA, PDISC | Temario oficial (diseño curricular) | Estructurados en `### N.` + viñetas |
+| LPR | Temario oficial **+ adenda institucional** | Línea explícita "Se establece que el lenguaje de programación a utilizar es Python" (no está en el diseño curricular original) |
+| LSO | Temario oficial **refactorizado y concretado a tecnología** | Reescrito a C#/.NET + Minimal APIs + SQL Server + EF Core (commits `49f777e`, `656deec`) |
+
 > **Marcador `@validar` en plantillas**: las plantillas pueden declarar validación de longitud con un comentario Jinja `{# @validar: doc_entero min=20000 #}` (medida + `min`/`max`). La app lo lee de la plantilla cruda y **avisa** (no bloquea) si el output no cumple. Jinja descarta el comentario, así que no contamina el prompt. Medidas: `doc_entero` (todo el doc) y `parrafo_sintesis` (primer párrafo sustantivo).
 
 ## 4. `a2` — Plan de Clases (9 columnas)
