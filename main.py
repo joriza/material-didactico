@@ -669,6 +669,13 @@ def main(argv=None):
                 if args.tema_idx is not None and str(args.tema_idx).strip() != str(tema_nro).strip():
                     continue
                 print(f"\n----- Tema {tema_nro}: {tema_row.get('tema', '')} -----")
+                # Encuentro de Carácter "Evaluativa*": no se genera ningún documento tipo b.
+                # Una clase de examen no imparte contenidos (sin b1), la actividad ES el
+                # examen que diseña el docente (sin b2/b4), y b5/b6 dependen de b1. Todo manual.
+                caracter_fila = _strip_accents(str(tema_row.get("caracter", ""))).strip().lower()
+                if caracter_fila.startswith("evaluativa"):
+                    print(f"  → Clase de Carácter '{tema_row.get('caracter')}' (Evaluativa): sin documentos tipo b (examen manual).")
+                    continue
                 # Detalle del encuentro desde a3 (vacío si no existe → fallback a a2)
                 clave_a3 = (str(eje_val).strip(), str(clase_eje_val).strip(), str(tema_nro).strip())
                 detalle_enc = a3_secciones.get(clave_a3, "")
@@ -681,13 +688,6 @@ def main(argv=None):
                 b1_existe = _existe_output(args.materia, eje_val, clase_eje_val, "b1", tema_nro=tema_nro, multi=multi)
                 for t in cascada:
                     suf = f" (tema {tema_nro})" if multi else ""
-                    # Skip b2 y b4 en encuentros de Carácter "Evaluativa"
-                    # (la actividad áulica ES la evaluación, que el docente diseña manualmente
-                    # según el desempeño del grupo; no se autogenera)
-                    caracter_fila = _strip_accents(str(tema_row.get("caracter", ""))).strip().lower()
-                    if t in ("b2", "b4") and caracter_fila == "evaluativa":
-                        print(f"  → {t} omitido en encuentro de Carácter 'Evaluativa' (lo generás manualmente).")
-                        continue
                     if t == "b1":
                         if b1_existe:
                             print(f"  → b1 ya existe{suf}, saltando.")
