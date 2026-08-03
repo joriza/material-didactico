@@ -48,6 +48,16 @@ DISTRIBUCIÓN TOTAL ANUAL (constante, no negociable):
 - 2 cierres (uno por cuatrimestre).
 - **Total: 8 + 24 + 2 + 2 = 36 clases.**
 
+#### 1bis. REGLA DE PROGRESIÓN PEDAGÓGICA
+
+Antes de armar la planificación, identificá los **conceptos prerrequisito** de cada eje. Son aquellos necesarios para entender el eje pero que todavía no se introdujeron formalmente. Distinguí dos categorías:
+
+(a) **Saberes previos** (de años/materias anteriores): por ejemplo, álgebra de Boole antes de Karnaugh; conversión binario/decimal antes de subneteo; POO básica antes de patrones de diseño; SQL antes de un ORM. No los desarrolles dentro del eje; asumilos sabidos, con una mención breve al inicio.
+
+(b) **Conceptos propios del lenguaje o la tecnología** que el temario oficial da por sentados pero que no son evidentes por sí mismos. Por ejemplo: mutabilidad y referencias en Python antes de `dataclass(frozen=True)` y type hints avanzados; inyección de dependencias antes de Minimal APIs en C#/.NET; DOM antes de eventos y LocalStorage en JavaScript; modelo OSI antes de TCP/IP y dispositivos de red. A estos SÍ dedicáles contenido, en la **primera clase del eje que los necesita** o en una **intensificación inicial**, marcándolos explícitamente como *"Fundamentos previos"* del eje.
+
+**Regla operativa**: ningún concepto puede aparecer por primera vez en una clase que lo requiera como prerrequisito. Si un concepto es necesario para entender la clase N, debe introducirse formalmente en una clase M < N (contenido de un eje anterior, primera clase del propio eje, o intensificación inicial).
+
 #### 2. METODOLOGÍA Y FORMATO DE TABLA
 
 - **Carga Horaria**: Distribuir los contenidos según `{{ Carga_Horaria_Anual }}`, con `{{ Frecuencia }}` y `{{ Carga_Horaria_encuentro }}`.
