@@ -239,3 +239,22 @@ Editá el CSS para cambiar fuentes/colores/espaciados. Editá el script solo si 
 ## 11. Pendiente
 
 - (Sin pendientes)
+
+## 12. Mensajes de commit (Conventional Commits)
+
+Los commits usan el estándar **Conventional Commits**: un prefijo antes de los dos puntos indica el *tipo* de cambio. Facilita la lectura del historial y la generación automática de CHANGELOG/versionado.
+
+Prefijos usados en este repo:
+
+| Prefijo | Uso | Ejemplo del historial |
+|---|---|---|
+| `feat` | Nueva funcionalidad (algo que hace cosas nuevas para el usuario) | `feat: modo multi-eje, cascada R1+R2...` |
+| `fix` | Corrección de un bug (algo que no funciona como debería) | `fix: sigla de materia siempre en mayusculas...` |
+| `chore` | Mantenimiento que no es feature ni fix: config, metadatos, scripts, sincronizar docs con código | `chore: sincroniza metadata y config...` |
+| `docs` | Cambios **solo** en documentación (`.md`) | `docs: contenidos minimos LSO...` |
+
+**Regla práctica:** si el cambio *agrega capacidad* que el usuario nota → `feat`; si *corrige* algo roto → `fix`; si es *mantenimiento* (config, metadatos, scripts) → `chore`; si tocás *solo `.md`* → `docs`.
+
+El cuerpo del commit (opcional, tras un salto de línea o un segundo `-m`) explica el *qué* y el *por qué*, idealmente con viñetas cuando hay varios puntos. El prefijo solo clasifica.
+
+> El estándar completo incluye más prefijos (`style`, `refactor`, `perf`, `test`, `build`, `ci`, `revert`), pero en este repo se usan principalmente los cuatro de la tabla.
