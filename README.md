@@ -65,6 +65,58 @@ El archivo `materias/<sigla>/datos-contenidos_minimos.md` es la **fuente de verd
 | LPR | Temario oficial **+ adenda institucional** | Línea explícita "Se establece que el lenguaje de programación a utilizar es Python" (no está en el diseño curricular original) |
 | LSO | Temario oficial **refactorizado y concretado a tecnología** | Reescrito a C#/.NET + Minimal APIs + SQL Server + EF Core (commits `49f777e`, `656deec`) |
 
+### 3.2 Agregar o renombrar una materia
+
+Hay **dos operaciones distintas** con cuidados muy diferentes. No las mezcles.
+
+> **`Variable_Materia` ≠ sigla** — el error #1 al renombrar.
+> - `Variable_Materia` (en `config-datos.md`) es el **nombre largo** (ej. `"ELECTRÓNICA INDUSTRIAL"`). Solo lo consumen las plantillas Jinja2 para imprimir headers/contenido. NO afecta naming ni lookups.
+> - La **sigla** (`--materia EIN`) determina el nombre de la carpeta (`materias/EIN/`) y el prefijo de todos los outputs (`EIN-*.md`). SÍ afecta naming y lookups.
+
+#### 3.2.1 Cambiar el nombre largo (`Variable_Materia`)
+
+Editás solo `materias/<SIGLA>/config-datos.md`, línea `Variable_Materia: <nombre largo>`.
+
+- **Afecta**: contenido de los outputs (headers `Materia: ...` en b1/b2/b6, menciones en el cuerpo).
+- **NO afecta**: naming de archivos, lookups, cascada, `.bat`.
+- **Cuidado**: los `.md` ya generados conservan el viejo `Variable_Materia`. Regeneralos para que reflejen el nuevo nombre.
+
+#### 3.2.2 Cambiar la sigla (`--materia <SIGLA>`)
+
+La sigla está "bakeada" en varios lugares. Aparece en:
+
+1. **Carpeta** `materias/<SIGLA>/`
+2. **Outputs previos**: prefijo `output/<SIGLA>-*.md`. La app busca prerrequisitos por ese prefijo (`main.py:390, 514`).
+3. **Scripts `.bat`** (`grupo1.bat`, `grupo2.bat`): invocan `--materia <SIGLA>`.
+4. **Documentación** (README, `design.md`): menciones ejemplares; no funcionales.
+
+**Cuidados clave**:
+
+- **Mayúsculas obligatorias**: `main.py:496` normaliza con `.upper()`. La carpeta va en MAYÚSCULAS (`EIN`, no `ein`).
+- **Outputs previos quedan huérfanos**: la app NO migra automáticamente. Renombrá `output/<VIEJO>-*.md` → `output/<NUEVO>-*.md` para preservar trabajo, o regenerá desde cero.
+- **La sigla NO va en `config-datos.md`**: ese archivo lleva `Variable_Materia` (nombre largo), no la sigla.
+- **Siglas con guion** (ej. `ITI-PDA`): funcionan, pero el naming visual se parsea peor (`ITI-PDA-XX-...md`). Preferí siglas sin guion cuando sea posible.
+
+**Checklist — renombrar sigla**:
+
+```
+1. Renombrar carpeta: materias/<VIEJO>/ → materias/<NUEVO>/
+2. Renombrar outputs:  output/<VIEJO>-*.md → output/<NUEVO>-*.md
+3. Actualizar --materia en los .bat
+4. (Opcional) Actualizar ejemplos en README / design.md
+5. Smoke test: python main.py --materia <NUEVO> --tarea a1 --dry-run
+```
+
+**Checklist — agregar materia nueva** (más común):
+
+```
+1. Crear carpeta materias/<SIGLA>/ en MAYÚSCULAS
+2. Copiar y editar config-datos.md desde otra materia
+3. Crear datos-contenidos_minimos.md (origen según §3.1)
+4. (Opcional) Agregar invocación a un .bat
+5. Primera corrida con --tarea a1
+```
+
 > **Marcador `@validar` en plantillas**: las plantillas pueden declarar validación de longitud con un comentario Jinja `{# @validar: doc_entero min=20000 #}` (medida + `min`/`max`). La app lo lee de la plantilla cruda y **avisa** (no bloquea) si el output no cumple. Jinja descarta el comentario, así que no contamina el prompt. Medidas: `doc_entero` (todo el doc) y `parrafo_sintesis` (primer párrafo sustantivo).
 
 ## 4. `a2` — Plan de Clases (9 columnas)
