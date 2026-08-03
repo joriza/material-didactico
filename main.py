@@ -587,6 +587,13 @@ def main(argv=None):
                 b1_existe = _existe_output(args.materia, eje_val, clase_eje_val, "b1", tema_nro=tema_nro, multi=multi)
                 for t in cascada:
                     suf = f" (tema {tema_nro})" if multi else ""
+                    # Skip b2 y b4 en encuentros de Carácter "Evaluativa"
+                    # (la actividad áulica ES la evaluación, que el docente diseña manualmente
+                    # según el desempeño del grupo; no se autogenera)
+                    caracter_fila = _strip_accents(str(tema_row.get("caracter", ""))).strip().lower()
+                    if t in ("b2", "b4") and caracter_fila == "evaluativa":
+                        print(f"  → {t} omitido en encuentro de Carácter 'Evaluativa' (lo generás manualmente).")
+                        continue
                     if t == "b1":
                         if b1_existe:
                             print(f"  → b1 ya existe{suf}, saltando.")
