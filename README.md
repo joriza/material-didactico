@@ -139,17 +139,21 @@ python main.py --materia IRI --tarea a1 --provider glm-cloud
 # 2) Plan de clases / libro de temas (a2) — usa a1
 python main.py --materia IRI --tarea a2 --provider glm-cloud
 
-# 3) Material didáctico (b1) de una clase
+# 3) Detalle de encuentros (a3) — usa a1+a2; SIN restricciones de longitud
+#    Opcional pero recomendado: alimenta b1 con detalle y fundamentos previos
+python main.py --materia IRI --tarea a3 --provider glm-cloud
+
+# 4) Material didáctico (b1) de una clase — usa a3 si existe (sino, fallback a a2)
 python main.py --materia IRI --tarea b1 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia LPR --tarea b1 --eje 5 --clase-eje 1 --provider glm-cloud
 
-# 4) Derivados (usan el b1 ya generado; mismo nombre referencial)
+# 5) Derivados (usan el b1 ya generado; mismo nombre referencial)
 python main.py --materia IRI --tarea b2 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b4 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b5 --eje 1 --clase-eje 1 --provider glm-cloud
 python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-cloud
 
-# 5) Todos los ejes con dictado (sin --eje → toda la materia)
+# 6) Todos los ejes con dictado (sin --eje → toda la materia)
 python main.py --materia IRI --tarea b1 --provider glm-cloud  # sin --eje → todos los ejes con dictado
 ```
 
@@ -172,13 +176,14 @@ La selección de clase sigue una jerarquía de especificidad (de más a menos):
 | Flag | Descripción |
 |---|---|
 | `--materia <sigla>` | Obligatorio (ej. IRI; se normaliza a MAYÚSCULAS en el naming) |
-| `--tarea <código>` | a1, a2, b1, b2, b4, b5, b6 |
+| `--tarea <código>` | a1, a2, a3, b1, b2, b4, b5, b6 |
 | `--eje <n>` | nro_eje |
 | `--clase-eje <n>` | nro_clase_eje |
 | `--id <n>` | id global (alternativa a --eje/--clase-eje) |
 | `--tema-idx <n>` | Tema_Nro puntual dentro del encuentro (multi-tema). Si se omite, procesa todos los temas. |
 | `--a2 <ruta>` | a2 alternativo (si no, busca el más reciente en output/) |
-| `--a1 <ruta>` | a1 alternativo (para a2) |
+| `--a1 <ruta>` | a1 alternativo (para a2 y a3) |
+| `--a3 <ruta>` | a3 alternativo (para b1 y derivados; si no se pasa, se usa el más reciente en output/) |
 | `--provider <key>` | provider de config-llm.json |
 | `--modelo <id>` | sobreescribe el modelo |
 | `--dry-run` | arma y muestra el prompt sin llamar al LLM |
@@ -200,10 +205,11 @@ El **nombre referencial** lo genera el LLM en `b1` (del título); `b2`, `b4`, `b
 ## 8. Dependencias entre tareas (DAG)
 
 ```
-a1 → a2 → b1 → b2, b5, b6
-              b2 → b4
+a1 → a2 → a3 → b1 → b2, b5, b6
+                  b2 → b4
 ```
 
+- `a3` es **opcional** como prerrequisito de `b1`: si existe, alimenta `b1` con detalle del encuentro y fundamentos previos desarrollados. Si no existe, `b1` cae a solo `a2` (backward compatibility).
 - `b2`, `b5`, `b6` requieren que `b1` exista (usan su contenido como insumo).
 - `b4` requiere que `b2` exista.
 - **Cascada B bidireccional implementada** (`resolver_cascada_b`): pedir una tarea tipo b → genera prerrequisitos + dependientes automáticamente. **Modo multi-eje** implementado: sin `--eje`, procesa todos los ejes con dictado.
@@ -244,6 +250,8 @@ choco install pandoc wkhtmltopdf
 .\convert.ps1                                        # convierte ./  (carpeta actual)
 .\convert.ps1 -Path output                           # convierte output/
 .\convert.ps1 -Path output\tmp02 -Css .\assets\print.css -Force
+.\convert.ps1 -Path output\PDA-2_temas_clase -Css .\assets\print.css 
+d:\Desarrollo\z-material-didactico\output\PDA-2_temas_clase\
 .\convert.ps1 -Path output\IRI-auto -Css .\assets\print.css -Force
 .\convert.ps1 -NoFooter                              # sin numeración al pie
 ```

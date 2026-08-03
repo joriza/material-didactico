@@ -87,18 +87,28 @@ Caso de uso: encuentros de 4h (o más) donde un solo encuentro abarca **varios t
 ## 5. Tipos de tarea y DAG de dependencias
 
 ```
-A:  a1 (plan anual) → a2 (plan de clases / libro de temas)
-B:  a2 → b1 (material didáctico) → b2 (actividad aúlica)
-                                   → b5 (planificación aúlica)
-                                   → b6 (guía docente: síntesis + ejemplos + aclaraciones + conexiones)
-        b2 → b4 (respuestas de la actividad)
+A:  a1 (plan anual) → a2 (plan de clases / libro de temas) → a3 (detalle de encuentros)
+B:  a3 → b1 (material didáctico) → b2 (actividad aúlica)
+                                  → b5 (planificación aúlica)
+                                  → b6 (guía docente: síntesis + ejemplos + aclaraciones + conexiones)
+     b2 → b4 (respuestas de la actividad)
 ```
 
-- `a2` es **prerrequisito** de `b1`: contiene la tabla de clases.
+- `a2` es **prerrequisito** de `a3`: contiene la tabla de clases que `a3` expande.
+- `a3` es **prerrequisito opcional** de `b1`: si existe, alimenta `b1` con detalle del encuentro y fundamentos previos desarrollados (sin restricciones de longitud, a diferencia de `a2` que respeta `Char_campos`). Si no existe, `b1` cae a solo `a2` (backward compatibility).
 - `b1` es **prerrequisito** de `b2`, `b5`, `b6` (usan `{{ material_didactico }}`).
 - `b2` es **prerrequisito** de `b4` (usa `{{ actividad_aulica }}`).
 - **eje 0 → no genera archivos tipo b** (skip automático: las clases sin dictado no tienen material).
+- **Carácter "Evaluativa" → skip b2 y b4** (la actividad aúlica ES la evaluación, que el docente diseña manualmente según el desempeño del grupo).
 - **Cascada B bidireccional** (`resolver_cascada_b`, implementada): pedir una tarea tipo b → genera ella + sus prerrequisitos + sus dependientes automáticamente.
+
+### 5.1 Documento `a3` (Detalle de Encuentros)
+
+- **Función**: desacopla la síntesis formal de `a2` (libro de aula, con `Char_campos` restrictivo) del detalle completo que necesita la cascada B para producir material didáctico rico.
+- **Estructura**: secciones `## Encuentro id=N (nro_eje=N, nro_clase_eje=N)` con sub-secciones `### Tema M: {Tema del Día}` para multi-tema.
+- **Contenido por tema**: desarrollo (sin restricción), fundamentos previos (propios del lenguaje/tecnología, desarrollados), objetivos específicos, prerrequisitos asumidos.
+- **Naming**: `<SIGLA>-Detalle_Encuentros-Curso_completo.md`.
+- **Parser**: `parse_a3_sections(path)` en `main.py` devuelve `{(nro_eje, nro_clase_eje, tema_nro): contenido}`.
 
 ## 6. Tareas tipo B (detalle)
 
