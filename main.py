@@ -22,7 +22,7 @@ MATERIAS = ROOT / "materias"
 OUTPUT = ROOT / "output"
 
 TAREA_LEGIBLE = {
-    "a1": "Plan_Anual", "a2": "Plan_De_Clases",
+    "a1": "Plan_Anual", "a2": "Plan_De_Clases", "a3": "Detalle_Encuentros",
     "b1": "Material_Didactico", "b2": "Actividad_Aulica",
     "b4": "Respuestas_Actividad", "b5": "Planificacion_Aulica",
     "b6": "Guia_Docente",
@@ -33,6 +33,7 @@ TAREA_LEGIBLE = {
 TAREA_TEMPLATE = {
     "a1": "tareas/tarea-plan_anual.md",
     "a2": "tareas/tarea-plan_de_clases.md",
+    "a3": "tareas/tarea-detalle_encuentros.md",
     "b1": "tareas/tarea-material_didactico.md",
     "b2": "tareas/tarea-actividad_aulica.md",
     "b4": "tareas/tarea-respuestas_actividad_aulica.md",
@@ -131,6 +132,48 @@ def filter_by_eje(rows: list[dict], nro_eje, nro_clase_eje=None) -> list[dict]:
             continue
         out.append(r)
     return out
+
+
+def parse_a3_sections(path: Path) -> dict:
+    """Parsea el archivo a3 y devuelve {(nro_eje, nro_clase_eje, tema_nro): contenido_tema}.
+
+    Espera secciones con formato:
+        ## Encuentro id=N (nro_eje=N, nro_clase_eje=N)
+        ### Tema M: {Tema del Día}
+        ...contenido del tema...
+
+    El contenido de cada tema es todo lo que sigue hasta la próxima sub-sección
+    `### Tema` o hasta la próxima sección `## Encuentro`.
+    """
+    if not path or not path.exists():
+        return {}
+    text = path.read_text(encoding="utf-8")
+    secciones = {}
+    # Patrón: ## Encuentro id=N (nro_eje=N, nro_clase_eje=N) o variantes sin paréntesis
+    # Extraemos nro_eje y nro_clase_eje del encabezado del encuentro.
+    encuentro_pat = re.compile(
+        r"^##\s*Encuentro\s+.*?nro_eje\s*=?\s*(\d+).*?nro_clase_eje\s*=?\s*(\d+)",
+        re.IGNORECASE,
+    )
+    tema_pat = re.compile(r"^###\s*Tema\s+(\d+)\s*:?\s*(.*)$", re.IGNORECASE)
+    bloques = re.split(r"(?=^##\s*Encuentro\b)", text, flags=re.MULTILINE | re.IGNORECASE)
+    for bloque in bloques:
+        enc_m = encuentro_pat.search(bloque)
+        if not enc_m:
+            continue
+        nro_eje = enc_m.group(1).strip()
+        nro_clase_eje = enc_m.group(2).strip()
+        # Dentro del bloque, partir por sub-secciones ### Tema
+        sub_bloques = re.split(r"(?=^###\s*Tema\b)", bloque, flags=re.MULTILINE | re.IGNORECASE)
+        for sub in sub_bloques:
+            tm = tema_pat.search(sub)
+            if not tm:
+                continue
+            tema_nro = tm.group(1).strip()
+            # Contenido del tema = todo el sub-bloque (incluye el encabezado)
+            clave = (nro_eje, nro_clase_eje, tema_nro)
+            secciones[clave] = sub.strip()
+    return secciones
 
 
 # --------------------------------------------------------------------------
@@ -406,6 +449,32 @@ def run_a2(args):
     return [(fname, doc)] if r else []
 
 
+def run_a3(args):
+    _, vars_cfg, contenidos, env, (client, model, dt) = _cargar_comun(args)
+    a1_path = Path(args.a1) if args.a1 else _find_latest(OUTPUT, f"{args.materia}-Plan_Anual-*.md")
+    if not a1_path or not a1_path.exists():
+        raise SystemExit("No se encontró a1. Generá a1 primero o usá --a1 <ruta>.")
+    a2_path = Path(args.a2) if args.a2 else _find_latest(OUTPUT, f"{args.materia}-Plan_De_Clases-*.md")
+    if not a2_path or not a2_path.exists():
+        raise SystemExit("No se encontró a2. Generá a2 primero o usá --a2 <ruta>.")
+    variables = {**vars_cfg, "contenidos_minimos": contenidos,
+                 "planificacion_anual": a1_path.read_text(encoding="utf-8"),
+                 "plan_de_clases": a2_path.read_text(encoding="utf-8")}
+    print(f"→ Usando a1: {a1_path.name}")
+    print(f"→ Usando a2: {a2_path.name}")
+    prompt = render(env, TAREA_TEMPLATE["a3"], variables)
+    if args.dry_run:
+        print("\n--- PROMPT (dry-run, a3) ---\n" + prompt)
+        return []
+    print(f"\n=== a3 — Detalle de Encuentros de {args.materia} ===")
+    t0 = time.time()
+    doc = call_llm(client, model, prompt, dt)
+    fname = f"{args.materia}-Detalle_Encuentros-Curso_completo.md"
+    print(f"\n⏱  {time.time() - t0:.1f}s")
+    r = write_output(OUTPUT / fname, doc)
+    return [(fname, doc)] if r else []
+
+
 def _insumo(args, tarea_dep, tema_nro=None, multi=False):
     """Lee el output de una tarea dependiente (b1/b2) para la clase+tema actual."""
     tarea_leg = TAREA_LEGIBLE[tarea_dep]
@@ -417,14 +486,15 @@ def _insumo(args, tarea_dep, tema_nro=None, multi=False):
     return f.read_text(encoding="utf-8")
 
 
-def run_b1(args, tema_row, tema_nro=None, multi=False):
+def run_b1(args, tema_row, tema_nro=None, multi=False, detalle_encuentro=""):
     _, vars_cfg, contenidos, env, (client, model, dt) = _cargar_comun(args)
     variables = {**vars_cfg,
                  "eje_numero": tema_row.get("nro_eje", args.eje),
                  "eje_descripcion": tema_row.get("eje_descripcion", ""),
                  "tema": tema_row.get("tema", ""),
                  "actividades": tema_row.get("actividades", ""),
-                 "contenidos_minimos": contenidos}
+                 "contenidos_minimos": contenidos,
+                 "detalle_encuentro": detalle_encuentro}
     prompt = render(env, TAREA_TEMPLATE["b1"], variables)
     if args.dry_run:
         print("\n--- PROMPT (dry-run, b1) ---\n" + prompt)
@@ -441,13 +511,14 @@ def run_b1(args, tema_row, tema_nro=None, multi=False):
     return [(fname, doc)] if r else []
 
 
-def run_b2_b5(args, tarea_code, tema_row, tema_nro=None, multi=False):
+def run_b2_b5(args, tarea_code, tema_row, tema_nro=None, multi=False, detalle_encuentro=""):
     _, vars_cfg, _, env, (client, model, dt) = _cargar_comun(args)
     variables = {**vars_cfg,
                  "eje_numero": tema_row.get("nro_eje", args.eje),
                  "eje_descripcion": tema_row.get("eje_descripcion", ""),
                  "tema": tema_row.get("tema", ""),
-                 "actividades": tema_row.get("actividades", "")}
+                 "actividades": tema_row.get("actividades", ""),
+                 "detalle_encuentro": detalle_encuentro}
     if tarea_code in ("b2", "b5", "b6"):
         variables["material_didactico"] = _insumo(args, "b1", tema_nro=tema_nro, multi=multi)
     if tarea_code == "b4":
@@ -489,6 +560,7 @@ def main(argv=None):
                     help="Tema_Nro puntual dentro del encuentro (multi-tema). Si se omite, procesa todos.")
     ap.add_argument("--a2", help="ruta a un a2 (plan de clases) alternativo")
     ap.add_argument("--a1", help="ruta a un a1 (plan anual) alternativo")
+    ap.add_argument("--a3", help="ruta a un a3 (detalle de encuentros) alternativo")
     ap.add_argument("--provider", help="provider de config-llm.json")
     ap.add_argument("--modelo", help="id de modelo (sobreescribe)")
     ap.add_argument("--dry-run", action="store_true", help="arma y muestra el prompt sin llamar al LLM")
@@ -503,6 +575,8 @@ def main(argv=None):
         docs = run_a1(args)
     elif tarea == "a2":
         docs = run_a2(args)
+    elif tarea == "a3":
+        docs = run_a3(args)
     elif tarea in TAREAS_B:
         if args.eje is not None and str(args.eje) == "0":
             print("→ nro_eje=0 (clase sin dictado): no se generan archivos tipo b.")
@@ -525,6 +599,19 @@ def main(argv=None):
                 raise SystemExit("No se pudo generar a2. Verificá el LLM y volvé a intentar.")
 
         rows = parse_a2_table(a2_path)
+
+        # Verificar prerrequisito opcional a3 (detalle de encuentros). Generar si falta.
+        a3_path = Path(args.a3) if args.a3 else _find_latest(OUTPUT, f"{args.materia}-Detalle_Encuentros-*.md")
+        if not a3_path or not a3_path.exists():
+            print("→ a3 (detalle de encuentros) no encontrado. Generando automáticamente...")
+            run_a3(args)
+            a3_path = _find_latest(OUTPUT, f"{args.materia}-Detalle_Encuentros-*.md")
+            if not a3_path:
+                print("  ⚠ No se pudo generar a3. Los b1 se alimentarán solo de a2 (modo fallback).")
+                a3_path = None
+        else:
+            print(f"→ Usando a3: {a3_path.name}")
+        a3_secciones = parse_a3_sections(a3_path) if a3_path else {}
 
         # Determinar las clases a procesar (jerarquía de especificidad)
         if args.id:
@@ -582,6 +669,13 @@ def main(argv=None):
                 if args.tema_idx is not None and str(args.tema_idx).strip() != str(tema_nro).strip():
                     continue
                 print(f"\n----- Tema {tema_nro}: {tema_row.get('tema', '')} -----")
+                # Detalle del encuentro desde a3 (vacío si no existe → fallback a a2)
+                clave_a3 = (str(eje_val).strip(), str(clase_eje_val).strip(), str(tema_nro).strip())
+                detalle_enc = a3_secciones.get(clave_a3, "")
+                if detalle_enc:
+                    print(f"  → Detalle del encuentro encontrado en a3 ({len(detalle_enc)} caracteres).")
+                else:
+                    print(f"  → Sin detalle en a3 para esta clase. b1 usará solo a2.")
                 cascada = resolver_cascada_b(tarea, manifest)
                 print(f"  Cascada: {' → '.join(cascada)}")
                 b1_existe = _existe_output(args.materia, eje_val, clase_eje_val, "b1", tema_nro=tema_nro, multi=multi)
@@ -607,9 +701,9 @@ def main(argv=None):
                         elif existe_t:
                             print(f"  → {t} colgado (sin b1), regenerando.")
                     if t == "b1":
-                        docs += run_b1(args, tema_row, tema_nro=tema_nro, multi=multi)
+                        docs += run_b1(args, tema_row, tema_nro=tema_nro, multi=multi, detalle_encuentro=detalle_enc)
                     else:
-                        docs += run_b2_b5(args, t, tema_row, tema_nro=tema_nro, multi=multi)
+                        docs += run_b2_b5(args, t, tema_row, tema_nro=tema_nro, multi=multi, detalle_encuentro=detalle_enc)
 
         print(f"\n>>> {len(clases_a_procesar)} clase(s) procesada(s), {len(docs)} documento(s) generado(s). <<<")
     else:

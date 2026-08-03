@@ -11,6 +11,11 @@ DATOS DE LA CLASE:
 CONTEXTO DE LA MATERIA (contenidos mínimos — para desambiguar el tema del día y delimitar el alcance; NO desarrollarlos todos, desarrollá SOLO el tema del día):
 {{ contenidos_minimos }}
 
+{% if detalle_encuentro %}
+DETALLE DEL ENCUENTRO (de a3 — guía para el desarrollo; los fundamentos previos del encuentro deben tratarse como sección inicial del b1 si el tema los requiere):
+{{ detalle_encuentro }}
+{% endif %}
+
 Diseñá material didáctico completo y profundo sobre el tema del día.
 
 DIRECTRICES PEDAGÓGICAS:

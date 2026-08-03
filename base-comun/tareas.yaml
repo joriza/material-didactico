@@ -14,8 +14,15 @@ tareas:
     archivo: tarea-plan_de_clases.md
     descripcion: Planificación de clases (libro de temas)
     depende_de: [a1]
-    dependientes: [b1]
+    dependientes: [a3]
     # a2 es PRERREQUISITO de b1: contiene la tabla de clases.
+
+  a3:
+    archivo: tarea-detalle_encuentros.md
+    descripcion: Detalle completo de cada encuentro (sin restricciones de longitud)
+    depende_de: [a2]
+    dependientes: [b1]
+    # a3 es PRERREQUISITO opcional de b1: si existe, alimenta b1 con detalle y fundamentos previos.
 
   b1:
     archivo: tarea-material_didactico.md
