@@ -21,7 +21,7 @@ tareas:
     archivo: tarea-material_didactico.md
     descripcion: Material didáctico
     depende_de: [a2]
-    dependientes: [b2, b5, b6]
+    dependientes: [b6, b2, b5]
     itera: por_clase        # default: un material por clase (temas combinados)
 
   b2:
