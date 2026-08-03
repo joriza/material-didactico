@@ -4,6 +4,7 @@
 Tareas: a1, a2, b1-b5. Naming: <sigla>-<nro_eje><nro_clase_eje>-<Tarea>-<nombre_≤50>.md
 """
 import argparse
+import csv
 import json
 import os
 import re
@@ -121,6 +122,20 @@ def parse_a2_table(path: Path) -> list[dict]:
             continue
         rows.append(dict(zip(header, cells)))
     return rows
+
+
+def _exportar_tabla_a2_csv(materia, md_path):
+    """Exporta la tabla del a2 a CSV (UTF-8 con BOM para Excel)."""
+    rows = parse_a2_table(md_path)
+    if not rows:
+        print("  ⚠ La tabla del a2 no se pudo parsear; no se genera CSV.")
+        return
+    csv_path = md_path.with_suffix(".csv")
+    with csv_path.open("w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    print(f"  → CSV de la tabla: {csv_path.name} ({len(rows)} filas)")
 
 
 def filter_by_eje(rows: list[dict], nro_eje, nro_clase_eje=None) -> list[dict]:
@@ -417,15 +432,20 @@ def run_a1(args):
     if args.dry_run:
         print("\n--- PROMPT (dry-run, a1) ---\n" + prompt)
         return []
+    fname = f"{args.materia}-Plan_Anual-Ciclo_lectivo.md"
+    out_path = OUTPUT / fname
+    # Verificar existencia ANTES de llamar al LLM (evita gastar tokens en un doc que se descarta)
+    if out_path.exists() and not SOBRESCRIBIR_SIN_PREGUNTAR:
+        r = input(f"\nEl archivo '{fname}' ya existe. ¿Regenerar (gasta tokens)? [s/N]: ").strip().lower()
+        if r != "s":
+            print("→ Se conserva el plan anual existente (sin llamar al LLM).")
+            return []
     print(f"\n=== a1 — Plan Anual de {args.materia} ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
-    titulo = extraer_titulo(doc)
-    ref = "Plan_anual" if titulo.lower().startswith("plan") else nombre_ref(titulo)
-    fname = f"{args.materia}-Plan_Anual-{ref}.md"
     print(f"\n⏱  {time.time() - t0:.1f}s")
-    r = write_output(OUTPUT / fname, doc)
-    return [(fname, doc)] if r else []
+    out_path.write_text(doc, encoding="utf-8")
+    return [(fname, doc)]
 
 
 def run_a2(args):
@@ -440,13 +460,26 @@ def run_a2(args):
     if args.dry_run:
         print("\n--- PROMPT (dry-run, a2) ---\n" + prompt)
         return []
+    fname = f"{args.materia}-Plan_De_Clases-Libro_de_temas.md"
+    out_path = OUTPUT / fname
+    # Verificar existencia ANTES de llamar al LLM (evita gastar tokens en un doc que se descarta)
+    if out_path.exists() and not SOBRESCRIBIR_SIN_PREGUNTAR:
+        r = input(f"\nEl archivo '{fname}' ya existe. ¿Regenerar (gasta tokens)? [s/N]: ").strip().lower()
+        if r != "s":
+            print("→ Se conserva el .md existente (sin llamar al LLM).")
+            csv_path = out_path.with_suffix(".csv")
+            if csv_path.exists():
+                print(f"→ CSV existente: {csv_path.name} (no se modifica).")
+            else:
+                _exportar_tabla_a2_csv(args.materia, out_path)
+            return []
     print(f"\n=== a2 — Plan de Clases de {args.materia} ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
-    fname = f"{args.materia}-Plan_De_Clases-Libro_de_temas.md"
     print(f"\n⏱  {time.time() - t0:.1f}s")
-    r = write_output(OUTPUT / fname, doc)
-    return [(fname, doc)] if r else []
+    out_path.write_text(doc, encoding="utf-8")
+    _exportar_tabla_a2_csv(args.materia, out_path)
+    return [(fname, doc)]
 
 
 def run_a3(args):
@@ -466,13 +499,20 @@ def run_a3(args):
     if args.dry_run:
         print("\n--- PROMPT (dry-run, a3) ---\n" + prompt)
         return []
+    fname = f"{args.materia}-Detalle_Encuentros-Curso_completo.md"
+    out_path = OUTPUT / fname
+    # Verificar existencia ANTES de llamar al LLM (evita gastar tokens en un doc que se descarta)
+    if out_path.exists() and not SOBRESCRIBIR_SIN_PREGUNTAR:
+        r = input(f"\nEl archivo '{fname}' ya existe. ¿Regenerar (gasta tokens)? [s/N]: ").strip().lower()
+        if r != "s":
+            print("→ Se conserva el detalle de encuentros existente (sin llamar al LLM).")
+            return []
     print(f"\n=== a3 — Detalle de Encuentros de {args.materia} ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
-    fname = f"{args.materia}-Detalle_Encuentros-Curso_completo.md"
     print(f"\n⏱  {time.time() - t0:.1f}s")
-    r = write_output(OUTPUT / fname, doc)
-    return [(fname, doc)] if r else []
+    out_path.write_text(doc, encoding="utf-8")
+    return [(fname, doc)]
 
 
 def _insumo(args, tarea_dep, tema_nro=None, multi=False):
