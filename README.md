@@ -250,8 +250,8 @@ choco install pandoc wkhtmltopdf
 .\convert.ps1                                        # convierte ./  (carpeta actual)
 .\convert.ps1 -Path output                           # convierte output/
 .\convert.ps1 -Path output\tmp02 -Css .\assets\print.css -Force
-.\convert.ps1 -Path output\PDA-2_temas_clase -Css .\assets\print.css 
-d:\Desarrollo\z-material-didactico\output\PDA-2_temas_clase\
+.\convert.ps1 -Path output\PIRI -Css .\assets\print.css 
+
 .\convert.ps1 -Path output\IRI-auto -Css .\assets\print.css -Force
 .\convert.ps1 -NoFooter                              # sin numeración al pie
 ```
