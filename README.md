@@ -320,7 +320,8 @@ Editá el CSS para cambiar fuentes/colores/espaciados. Editá el script solo si 
 
 ## 11. Pendiente
 
-- (Sin pendientes)
+- **Regenerar b1 (y derivados b2/b4/b5/b6)** de las materias para que aprovechen el `a3` que antes no se consumía por el bug del parser `tema_pat` (`main.py`). Los `a3` existentes (LPR, IRI, LSO, PDISC) ya son válidos como contenido; lo que fallaba era que `b1` no los parseaba.
+- **`design.md`**: agregar `Notas_Pedagogicas` a la tabla de variables (rocker de profundidad por materia, ya implementado en `specificacion-principal.md`).
 
 ## 12. Mensajes de commit (Conventional Commits)
 

@@ -226,7 +226,7 @@ def parse_a3_sections(path: Path) -> dict:
         r"^##\s*Encuentro\s+.*?nro_eje\s*=?\s*(\d+).*?nro_clase_eje\s*=?\s*(\d+)",
         re.IGNORECASE,
     )
-    tema_pat = re.compile(r"^###\s*Tema\s+(\d+)\s*:?\s*(.*)$", re.IGNORECASE)
+    tema_pat = re.compile(r"^###\s*Tema\s+(\d+)\s*:?\s*(.*)$", re.IGNORECASE | re.MULTILINE)
     bloques = re.split(r"(?=^##\s*Encuentro\b)", text, flags=re.MULTILINE | re.IGNORECASE)
     for bloque in bloques:
         enc_m = encuentro_pat.search(bloque)
