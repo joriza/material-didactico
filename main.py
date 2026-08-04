@@ -157,6 +157,14 @@ def _parse_a1_table(path: Path) -> list[dict]:
             continue
         if all(re.fullmatch(r"[:\s-]*", c) for c in cells):
             continue
+        # Header duplicado (ej. planificación dividida por cuatrimestre con
+        # headers repetidos): saltar, no es fila de datos.
+        if cells == header:
+            continue
+        # Segunda tabla detectada (sección de intensificación): distinto número
+        # de celdas que el header principal → parar (solo se exporta la 1ª tabla).
+        if len(cells) != len(header):
+            break
         rows.append(dict(zip(header, cells)))
     return rows
 
