@@ -172,12 +172,14 @@ def _parse_a1_table(path: Path) -> list[dict]:
 def _sanear_celda_a1(texto: str) -> str:
     """Limpia una celda rica del a1 para consumo humano en CSV.
 
-    - <br> (y variantes <br/>, <BR >) → salto de línea real.
+    - <br> (y variantes <br/>, <BR >) → " — " (em dash). Una sola línea por celda
+      para que cualquier hoja de cálculo (Excel/Sheets/LibreOffice) no parta la fila.
     - **bold** → texto plano.
     - `code` → texto plano.
     El orden importa: primero <br> (para no romper el resto), después marcadores.
     """
-    texto = re.sub(r"<br\s*/?>", "\n", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"<br\s*/?>", " — ", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"( — )\s* — ", r"\1", texto)  # colapsar <br><br> consecutivos
     texto = re.sub(r"\*\*(.+?)\*\*", r"\1", texto)
     texto = re.sub(r"`([^`]+)`", r"\1", texto)
     return texto.strip()
@@ -186,8 +188,9 @@ def _sanear_celda_a1(texto: str) -> str:
 def _exportar_tabla_a1_csv(materia, md_path):
     """Exporta la tabla del a1 a CSV (UTF-8 con BOM para Excel).
 
-    Sanea celdas ricas (<br>, **bold**, `code`) a texto plano con saltos reales.
-    Usa QUOTE_ALL porque las celdas pueden contener saltos de línea internos.
+    Sanea celdas ricas (<br> → " — ", **bold** y `code` → texto plano) a una línea
+    por celda, compatible con cualquier hoja de cálculo. Usa QUOTE_ALL para
+    proteger comas internas en el contenido.
     """
     rows = _parse_a1_table(md_path)
     if not rows:

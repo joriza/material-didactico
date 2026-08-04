@@ -157,7 +157,7 @@ python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-clo
 python main.py --materia IRI --tarea b1 --provider glm-cloud  # sin --eje → todos los ejes con dictado
 ```
 
-> **CSV de tablas**: `a1` y `a2` generan además `<mismo-basename>.csv` (UTF-8 con BOM para Excel) con la tabla parseada. El `.csv` de `a1` sanea celdas ricas (`<br>` → salto de línea, se elimina `**bold**` y `` `code` ``); el de `a2` pasa las celdas atómicas tal cual.
+> **CSV de tablas**: `a1` y `a2` generan además `<mismo-basename>.csv` (UTF-8 con BOM para Excel) con la tabla parseada. El `.csv` de `a1` sanea celdas ricas (`<br>` → «—», se elimina `**bold**` y `` `code` ``); el de `a2` pasa las celdas atómicas tal cual.
 
 ### Búsqueda de clase
 
