@@ -50,7 +50,7 @@ base-comun/                 ← común a todas las materias
 materias/<sigla>/           ← datos por materia (sueltos)
   config-datos.md
   datos-contenidos_minimos.md
-output/                     ← generados (único global)
+output/                     ← generados (.md + .csv de tablas a1/a2; único global)
 docs/                       ← referencia
 main.py                     ← app
 ```
@@ -157,6 +157,8 @@ python main.py --materia IRI --tarea b6 --eje 1 --clase-eje 1 --provider glm-clo
 python main.py --materia IRI --tarea b1 --provider glm-cloud  # sin --eje → todos los ejes con dictado
 ```
 
+> **CSV de tablas**: `a1` y `a2` generan además `<mismo-basename>.csv` (UTF-8 con BOM para Excel) con la tabla parseada. El `.csv` de `a1` sanea celdas ricas (`<br>` → salto de línea, se elimina `**bold**` y `` `code` ``); el de `a2` pasa las celdas atómicas tal cual.
+
 ### Búsqueda de clase
 
 La selección de clase sigue una jerarquía de especificidad (de más a menos):
@@ -194,12 +196,22 @@ La selección de clase sigue una jerarquía de especificidad (de más a menos):
 
 Ej.: `IRI-11-Material_Didactico-Fundamentos_de_redes_de_area.md`
 
+**a-tasks** (naming fijo, sin `nro_eje`/`nro_clase_eje`):
+- `a1`: `<sigla>-Plan_Anual-Ciclo_lectivo.md`
+- `a2`: `<sigla>-Plan_De_Clases-Libro_de_temas.md`
+- `a3`: `<sigla>-Detalle_Encuentros-Curso_completo.md`
+
+**CSV de tablas** (a1, a2): mismo basename que el `.md`, extensión `.csv`.
+Ej.: `IRI-Plan_Anual-Ciclo_lectivo.csv`, `IRI-Plan_De_Clases-Libro_de_temas.csv`.
+
 El **nombre referencial** lo genera el LLM en `b1` (del título); `b2`, `b4`, `b5` y `b6` lo **reutilizan** (mismo nombre para toda la clase/tema).
 
 ## 7. Output
 
 - Único global en `output/`.
-- Si el archivo existe → **pregunta** "¿Sobrescribir? [S/n]" (default Sí).
+- **a-tasks (a1, a2, a3)**: si el `.md` existe, pregunta **antes de llamar al LLM** "¿Regenerar (gasta tokens)? [s/N]" (default No → **cero tokens** si se conserva). Si se conserva el `.md` y falta el `.csv` (a1, a2), lo genera del `.md` existente sin llamar al LLM.
+- **b-tasks**: si el `.md` existe, pregunta al escribir "¿Sobrescribir? [S/n]" (default Sí; el LLM ya corrió).
+- **CSV de tablas** (a1, a2): se generan junto con el `.md`. Si el `.csv` ya existe y el `.md` se conserva, **no se modifica** (lo cuida el usuario; para refrescarlo, borrarlo y volver a correr).
 - Al final imprime el **tiempo insumido** (`⏱  Xs`).
 
 ## 8. Dependencias entre tareas (DAG)

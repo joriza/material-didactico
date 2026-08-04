@@ -138,6 +138,62 @@ def _exportar_tabla_a2_csv(materia, md_path):
     print(f"  → CSV de la tabla: {csv_path.name} ({len(rows)} filas)")
 
 
+def _parse_a1_table(path: Path) -> list[dict]:
+    """Parsea la tabla Markdown del a1 → lista de dicts con header crudo (sin canonizar).
+
+    A diferencia de parse_a2_table, NO canoniza claves: el CSV de a1 es para consumo
+    humano en Excel (ningún downstream lo consume como datos estructurados).
+    """
+    rows, header = [], None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.split("|")[1:-1]]
+        if not cells:
+            continue
+        if header is None:
+            header = cells
+            continue
+        if all(re.fullmatch(r"[:\s-]*", c) for c in cells):
+            continue
+        rows.append(dict(zip(header, cells)))
+    return rows
+
+
+def _sanear_celda_a1(texto: str) -> str:
+    """Limpia una celda rica del a1 para consumo humano en CSV.
+
+    - <br> (y variantes <br/>, <BR >) → salto de línea real.
+    - **bold** → texto plano.
+    - `code` → texto plano.
+    El orden importa: primero <br> (para no romper el resto), después marcadores.
+    """
+    texto = re.sub(r"<br\s*/?>", "\n", texto, flags=re.IGNORECASE)
+    texto = re.sub(r"\*\*(.+?)\*\*", r"\1", texto)
+    texto = re.sub(r"`([^`]+)`", r"\1", texto)
+    return texto.strip()
+
+
+def _exportar_tabla_a1_csv(materia, md_path):
+    """Exporta la tabla del a1 a CSV (UTF-8 con BOM para Excel).
+
+    Sanea celdas ricas (<br>, **bold**, `code`) a texto plano con saltos reales.
+    Usa QUOTE_ALL porque las celdas pueden contener saltos de línea internos.
+    """
+    rows = _parse_a1_table(md_path)
+    if not rows:
+        print("  ⚠ La tabla del a1 no se pudo parsear; no se genera CSV.")
+        return
+    saneadas = [{k: _sanear_celda_a1(v) for k, v in r.items()} for r in rows]
+    csv_path = md_path.with_suffix(".csv")
+    with csv_path.open("w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(saneadas[0].keys()), quoting=csv.QUOTE_ALL)
+        w.writeheader()
+        w.writerows(saneadas)
+    print(f"  → CSV de la tabla: {csv_path.name} ({len(rows)} filas)")
+
+
 def filter_by_eje(rows: list[dict], nro_eje, nro_clase_eje=None) -> list[dict]:
     out = []
     for r in rows:
@@ -439,12 +495,18 @@ def run_a1(args):
         r = input(f"\nEl archivo '{fname}' ya existe. ¿Regenerar (gasta tokens)? [s/N]: ").strip().lower()
         if r != "s":
             print("→ Se conserva el plan anual existente (sin llamar al LLM).")
+            csv_path = out_path.with_suffix(".csv")
+            if csv_path.exists():
+                print(f"→ CSV existente: {csv_path.name} (no se modifica).")
+            else:
+                _exportar_tabla_a1_csv(args.materia, out_path)
             return []
     print(f"\n=== a1 — Plan Anual de {args.materia} ===")
     t0 = time.time()
     doc = call_llm(client, model, prompt, dt)
     print(f"\n⏱  {time.time() - t0:.1f}s")
     out_path.write_text(doc, encoding="utf-8")
+    _exportar_tabla_a1_csv(args.materia, out_path)
     return [(fname, doc)]
 
 
